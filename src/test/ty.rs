@@ -13,9 +13,9 @@ fn to_id() {
 
     let env = env.local();
 
-    let a = Type::Gen("A".to_owned(), vec!());
-    let b = Type::Gen("B".to_owned(), vec!());
-    let c = Type::Gen("C".to_owned(), vec!());
+    let a = ttype!(A);
+    let b = ttype!(B);
+    let c = ttype!(C);
 
     let a_ty = TypeID::Gen(a_id, vec!());
     let b_ty = TypeID::Gen(b_id, vec!());
