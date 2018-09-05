@@ -3,7 +3,7 @@ use env::Env;
 #[test]
 fn create_empty_env() {
     let mut data = Vec::<&str>::new();
-    let env = Env::new(&mut data);
+    Env::new(&mut data);
 }
 
 #[test]

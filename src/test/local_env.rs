@@ -5,7 +5,7 @@ use id::ID;
 fn create_empty_env() {
     let mut data = Vec::<&str>::new();
     let env = Env::new(&mut data);
-    let env = env.local();
+    env.local();
 }
 
 #[test]
