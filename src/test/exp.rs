@@ -10,7 +10,7 @@ fn succ_zero() {
     let mut tys = vec![];
     let mut env = Envs::new(&mut exps, &mut tys);
     
-    let fn_id = env.ty.add("fn".to_owned(), (vec!(Contravariant, Covariant), vec!(), vec!()));
+    env.ty.add("fn".to_owned(), (vec!(Contravariant, Covariant), vec!(), vec!()));
 
     let nat_id = env.ty.add("Nat".to_owned(), (vec!(), vec!(), vec!()));
 
@@ -23,7 +23,6 @@ fn succ_zero() {
     env.ty.get_mut(nat_id).unwrap().2.push(succ_id);
 
     let exp = exp!(Succ(Zero));
-    let exp_id = ExpID::Call(Box::new(ExpID::Var(ID::Global(succ_id))), Box::new(ExpID::Var(ID::Global(zero_id))));
 
-    assert_eq!(exp.to_id(&env.local()), Some(exp_id));
+    assert_eq!(exp.to_id(&env.local()), Some(exp_id!(*succ_id(*zero_id))));
 }

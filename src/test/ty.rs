@@ -13,16 +13,8 @@ fn to_id() {
 
     let env = env.local();
 
-    let a = ttype!(A);
-    let b = ttype!(B);
-    let c = ttype!(C);
-
-    let a_ty = TypeID::Gen(a_id, vec!());
-    let b_ty = TypeID::Gen(b_id, vec!());
-    let c_ty = TypeID::Gen(c_id, vec!());
-
-    assert_eq!(a.to_id(&env), Some(a_ty.clone()));
-    assert_eq!(b.to_id(&env), Some(b_ty.clone()));
-    assert_eq!(c.to_id(&env), Some(c_ty.clone()));
-    assert_eq!(Type::Tuple(vec!(a, b, c)).to_id(&env), Some(TypeID::Tuple(vec!(a_ty, b_ty, c_ty))));
+    assert_eq!(ttype!(A).to_id(&env), Some(type_id!(a_id)));
+    assert_eq!(ttype!(B).to_id(&env), Some(type_id!(b_id)));
+    assert_eq!(ttype!(C).to_id(&env), Some(type_id!(c_id)));
+    assert_eq!(ttype!((A, B, C)).to_id(&env), Some(type_id!((a_id, b_id, c_id))));
 }
