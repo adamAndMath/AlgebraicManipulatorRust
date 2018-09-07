@@ -2,7 +2,7 @@ use envs::Envs;
 use exp_id::ExpID;
 use ty::Variance::*;
 use ty::{ Variance, TypeID };
-use id::ID;
+use id::LocalID;
 
 #[test]
 fn type_check() {

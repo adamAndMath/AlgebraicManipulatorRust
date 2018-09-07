@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
 use env::Env;
-use id::ID;
+use id::LocalID;
 
 #[derive(Debug)]
 pub enum LocalEnv<'a, T: 'a> {
@@ -23,29 +23,29 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
         LocalEnv::Scope(self, HashMap::new(), v)
     }
 
-    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<ID> where String: Borrow<S> {
+    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<LocalID> where String: Borrow<S> {
         match self {
-            LocalEnv::Base(env) => env.get_id(name).map(|id|ID::Global(*id)),
+            LocalEnv::Base(env) => env.get_id(name).map(|id|LocalID::Global(*id)),
             LocalEnv::Scope(env, m, v) =>
-                m.get(name).map(|id|ID::Local(*id)).or_else(||
+                m.get(name).map(|id|LocalID::Local(*id)).or_else(||
                     Some(match env.get_id(name)? {
-                        ID::Global(id) => ID::Global(id),
-                        ID::Local(id) => ID::Local(id+v.len()),
+                        LocalID::Global(id) => LocalID::Global(id),
+                        LocalID::Local(id) => LocalID::Local(id+v.len()),
                     })
                 ),
         }
     }
 
-    pub fn get(&self, id: ID) -> Option<&T> {
+    pub fn get(&self, id: LocalID) -> Option<&T> {
         match (self, id) {
-            (LocalEnv::Base(env), ID::Global(id)) => env.get(id),
-            (LocalEnv::Base(_), ID::Local(_)) => panic!("Unknown ID"),
-            (LocalEnv::Scope(env, _, _), ID::Global(id)) => env.get(ID::Global(id)),
-            (LocalEnv::Scope(env, _, v), ID::Local(id)) =>
+            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id),
+            (LocalEnv::Base(_), LocalID::Local(_)) => panic!("Unknown ID"),
+            (LocalEnv::Scope(env, _, _), LocalID::Global(id)) => env.get(LocalID::Global(id)),
+            (LocalEnv::Scope(env, _, v), LocalID::Local(id)) =>
                 if v.len() > id {
                     v.get(id)
                 } else {
-                    env.get(ID::Local(id - v.len()))
+                    env.get(LocalID::Local(id - v.len()))
                 },
         }
     }

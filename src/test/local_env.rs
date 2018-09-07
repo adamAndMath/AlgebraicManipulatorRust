@@ -1,5 +1,5 @@
 use env::Env;
-use id::ID;
+use id::LocalID;
 
 #[test]
 fn create_empty_env() {
@@ -14,9 +14,9 @@ fn create_env_with_a_b_c() {
     let env = Env::new(&mut data);
     let env = env.local();
 
-    assert_eq!(env.get(ID::Global(0)), Some(&"a"));
-    assert_eq!(env.get(ID::Global(1)), Some(&"b"));
-    assert_eq!(env.get(ID::Global(2)), Some(&"c"));
+    assert_eq!(env.get(LocalID::Global(0)), Some(&"a"));
+    assert_eq!(env.get(LocalID::Global(1)), Some(&"b"));
+    assert_eq!(env.get(LocalID::Global(2)), Some(&"c"));
 }
 
 #[test]
@@ -27,13 +27,13 @@ fn add_data_to_empty_env() {
         let env = env.local();
         let env = env.scope(vec!(("a".to_owned(), "1"), ("b".to_owned(), "2"), ("c".to_owned(), "3")));
 
-        assert_eq!(env.get_id("a"), Some(ID::Local(0)));
-        assert_eq!(env.get_id("b"), Some(ID::Local(1)));
-        assert_eq!(env.get_id("c"), Some(ID::Local(2)));
+        assert_eq!(env.get_id("a"), Some(LocalID::Local(0)));
+        assert_eq!(env.get_id("b"), Some(LocalID::Local(1)));
+        assert_eq!(env.get_id("c"), Some(LocalID::Local(2)));
 
-        assert_eq!(env.get(ID::Local(0)), Some(&"1"));
-        assert_eq!(env.get(ID::Local(1)), Some(&"2"));
-        assert_eq!(env.get(ID::Local(2)), Some(&"3"));
+        assert_eq!(env.get(LocalID::Local(0)), Some(&"1"));
+        assert_eq!(env.get(LocalID::Local(1)), Some(&"2"));
+        assert_eq!(env.get(LocalID::Local(2)), Some(&"3"));
     }
 
     assert!(data.is_empty());

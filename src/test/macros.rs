@@ -70,7 +70,7 @@ macro_rules! exp_tuple {
 
 macro_rules! exp_id {
     ($x:ident) => (ExpID::Var($x));
-    (*$x:ident) => (ExpID::Var(ID::Global($x)));
+    (*$x:ident) => (ExpID::Var(LocalID::Global($x)));
     ($x:ident($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x)), Box::new(exp_id_tuple!((), $($p)*))));
     (*$x:ident($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!(*$x)), Box::new(exp_id_tuple!((), $($p)*))));
     (($($p:tt)*)) => (exp_id_tuple!((), $($p)*));

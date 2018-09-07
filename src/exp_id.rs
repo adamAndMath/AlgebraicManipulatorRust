@@ -1,10 +1,10 @@
-use id::ID;
+use id::LocalID;
 use ty::{ Variance::*, TypeID };
 use envs::LocalEnvs;
 
 #[derive(Debug, PartialEq)]
 pub enum ExpID {
-    Var(ID),
+    Var(LocalID),
     Tuple(Vec<ExpID>),
     Lambda(Vec<TypeID>, Box<ExpID>),
     Call(Box<ExpID>, Box<ExpID>),

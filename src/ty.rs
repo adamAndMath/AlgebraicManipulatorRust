@@ -7,7 +7,7 @@ pub enum Variance {
     Contravariant,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Gen(String, Vec<Type>),
     Tuple(Vec<Type>),

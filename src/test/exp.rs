@@ -2,7 +2,7 @@ use envs::Envs;
 use exp_id::ExpID;
 use exp::Exp;
 use ty::{ Variance::*, Type };
-use id::ID;
+use id::LocalID;
 
 #[test]
 fn succ_zero() {
