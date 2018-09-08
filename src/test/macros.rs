@@ -7,8 +7,8 @@ macro_rules! ttype {
 macro_rules! ttype_vec {
     (($($v:tt)*)$(,)* ) => (vec!($($v)*));
     (($($v:tt)*), $t:ident $($rest:tt)*) => (ttype_vec!(($($v)* ttype!($t), ) $($rest)*));
-    (($($v:tt)*), $t:ident[$($g:tt)*] $($rest:tt)*) => (ttype_vec!(($($v)* ttype!($t[$($g)*])) $($rest)*));
-    (($($v:tt)*), ($($p:tt)*) $($rest:tt)*) => (ttype_vec!(($($v)* ttype!(($($p),*))) $($rest)*));
+    (($($v:tt)*), $t:ident[$($g:tt)*] $($rest:tt)*) => (ttype_vec!(($($v)* ttype!($t[$($g)*]), ) $($rest)*));
+    (($($v:tt)*), ($($p:tt)*) $($rest:tt)*) => (ttype_vec!(($($v)* ttype!(($($p)*)), ) $($rest)*));
 }
 
 macro_rules! type_id {
