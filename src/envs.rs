@@ -4,8 +4,54 @@ use exp_id::ExpID;
 use ty::{ Variance, TypeID };
 use id::ID;
 
-pub type ExpVal = (Option<ExpID>, TypeID);
-pub type TypeVal = (Vec<Variance>, Vec<ID<ExpVal>>, Vec<ID<ExpVal>>);
+#[derive(Debug, Clone)]
+pub struct ExpVal {
+    val: Option<ExpID>,
+    ty: TypeID,
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeVal {
+    gen: Vec<Variance>,
+    atoms: Vec<ID<ExpVal>>,
+    comps: Vec<ID<ExpVal>>,
+}
+
+impl ExpVal {
+    pub fn new_empty(ty: TypeID) -> Self {
+        ExpVal { val: None, ty }
+    }
+
+    pub fn new(e: ExpID, ty: TypeID) -> Self {
+        ExpVal { val: Some(e), ty }
+    }
+
+    pub fn val(&self) -> Option<ExpID> {
+        self.val.clone()
+    }
+
+    pub fn ty(&self) -> TypeID {
+        self.ty.clone()
+    }
+}
+
+impl TypeVal {
+    pub fn new(gen: Vec<Variance>) -> Self {
+        TypeVal { gen, atoms: vec!(), comps: vec!() }
+    }
+
+    pub fn gen(&self) -> &Vec<Variance> {
+        &self.gen
+    }
+
+    pub fn push_atom(&mut self, id: ID<ExpVal>) {
+        self.atoms.push(id);
+    }
+
+    pub fn push_comp(&mut self, id: ID<ExpVal>) {
+        self.comps.push(id);
+    }
+}
 
 #[derive(Debug)]
 pub struct Envs<'a> {

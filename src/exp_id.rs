@@ -2,7 +2,7 @@ use id::*;
 use ty::{ Variance::*, TypeID };
 use envs::{ ExpVal, LocalEnvs };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExpID {
     Var(LocalID<ExpVal>),
     Tuple(Vec<ExpID>),
@@ -13,7 +13,7 @@ pub enum ExpID {
 impl ExpID {
     pub fn type_check(&self, env: &LocalEnvs) -> Option<TypeID> {
         Some(match self {
-            ExpID::Var(x) => env.exp.get(*x)?.1.clone(),
+            ExpID::Var(x) => env.exp.get(*x)?.ty(),
             ExpID::Tuple(v) => TypeID::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Option<_>>()?),
             ExpID::Lambda(xs, e) => {
                 let p = if let [ref x] = xs[..] {
@@ -21,7 +21,7 @@ impl ExpID {
                 } else {
                     TypeID::Tuple(xs.clone())
                 };
-                let b = e.type_check(&env.scope_anon(xs.into_iter().map(|x|(None,x.clone())).collect()))?;
+                let b = e.type_check(&env.scope_anon(xs.clone().into_iter().map(ExpVal::new_empty).collect()))?;
                 TypeID::Gen(ID::new(0), vec![(Contravariant, p), (Covariant, b)])
             },
             ExpID::Call(f, e) => {

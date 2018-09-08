@@ -7,9 +7,9 @@ fn to_id() {
     let mut tys = vec![];
     let mut env = Envs::new(&mut exps, &mut tys);
     
-    let a_id = env.ty.add("A".to_owned(), (vec!(), vec!(), vec!()));
-    let b_id = env.ty.add("B".to_owned(), (vec!(), vec!(), vec!()));
-    let c_id = env.ty.add("C".to_owned(), (vec!(), vec!(), vec!()));
+    let a_id = env.ty.add("A".to_owned(), TypeVal::new(vec!()));
+    let b_id = env.ty.add("B".to_owned(), TypeVal::new(vec!()));
+    let c_id = env.ty.add("C".to_owned(), TypeVal::new(vec!()));
 
     let env = env.local();
 
