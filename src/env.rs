@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
 use local_env::LocalEnv;
+use id::ID;
 
 #[derive(Debug)]
-pub struct Env<'a, T: 'a>(HashMap<String, usize>, &'a mut Vec<T>);
+pub struct Env<'a, T: 'a>(HashMap<String, ID<T>>, &'a mut Vec<T>);
 
 impl<'a, T: 'a> Env<'a, T> {
     pub fn new(v: &'a mut Vec<T>) -> Self {
@@ -19,26 +20,26 @@ impl<'a, T: 'a> Env<'a, T> {
         LocalEnv::new(&self)
     }
 
-    pub fn add(&mut self, name: String, element: T) -> usize {
-        let id = self.1.len();
+    pub fn add(&mut self, name: String, element: T) -> ID<T> {
+        let id = ID::new(self.1.len());
         self.0.insert(name, id);
         self.1.push(element);
         id
     }
 
-    pub fn alias(&mut self, name: String, id: usize) {
+    pub fn alias(&mut self, name: String, id: ID<T>) {
         self.0.insert(name, id);
     }
 
-    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<&usize> where String: Borrow<S> {
-        self.0.get(name)
+    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<ID<T>> where String: Borrow<S> {
+        self.0.get(name).cloned()
     }
 
-    pub fn get(&self, id: usize) -> Option<&T> {
-        self.1.get(id)
+    pub fn get(&self, id: ID<T>) -> Option<&T> {
+        self.1.get(id.0)
     }
 
-    pub fn get_mut(&mut self, id: usize) -> Option<&mut T> {
-        self.1.get_mut(id)
+    pub fn get_mut(&mut self, id: ID<T>) -> Option<&mut T> {
+        self.1.get_mut(id.0)
     }
 }

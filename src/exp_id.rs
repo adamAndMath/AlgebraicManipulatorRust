@@ -1,10 +1,10 @@
-use id::LocalID;
+use id::*;
 use ty::{ Variance::*, TypeID };
-use envs::LocalEnvs;
+use envs::{ ExpVal, LocalEnvs };
 
 #[derive(Debug, PartialEq)]
 pub enum ExpID {
-    Var(LocalID),
+    Var(LocalID<ExpVal>),
     Tuple(Vec<ExpID>),
     Lambda(Vec<TypeID>, Box<ExpID>),
     Call(Box<ExpID>, Box<ExpID>),
@@ -22,13 +22,16 @@ impl ExpID {
                     TypeID::Tuple(xs.clone())
                 };
                 let b = e.type_check(&env.scope_anon(xs.into_iter().map(|x|(None,x.clone())).collect()))?;
-                TypeID::Gen(0, vec![(Contravariant, p), (Covariant, b)])
+                TypeID::Gen(ID::new(0), vec![(Contravariant, p), (Covariant, b)])
             },
             ExpID::Call(f, e) => {
                 let f = f.type_check(env)?;
                 let e = e.type_check(env)?;
                 
-                if let TypeID::Gen(0, v) = f {
+                if let TypeID::Gen(f_id, v) = f {
+                    if f_id != ID::new(0) {
+                        panic!("Not a function");
+                    }
                     if let [(Contravariant, ref p), (Covariant, ref b)] = v[..] {
                         if p == &e {
                             b.clone()

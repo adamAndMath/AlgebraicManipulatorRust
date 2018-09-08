@@ -69,10 +69,8 @@ macro_rules! exp_tuple {
 }
 
 macro_rules! exp_id {
-    ($x:ident) => (ExpID::Var($x));
-    (*$x:ident) => (ExpID::Var(LocalID::Global($x)));
+    ($x:ident) => (ExpID::Var($x.into()));
     ($x:ident($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x)), Box::new(exp_id_tuple!((), $($p)*))));
-    (*$x:ident($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!(*$x)), Box::new(exp_id_tuple!((), $($p)*))));
     (($($p:tt)*)) => (exp_id_tuple!((), $($p)*));
 }
 
@@ -80,9 +78,7 @@ macro_rules! exp_id_tuple {
     ((exp_id!($($e:tt)*)), ) => (exp_id!($($e)*));
     (($($v:tt)*), ) => (ExpID::Tuple(vec!($($v)*)));
     (($($v:tt)*), $x:ident$(($($p:tt)*))*) => (exp_id_tuple!(($($v)* exp_id!($x$(($($p)*))*)), ));
-    (($($v:tt)*), *$x:ident$(($($p:tt)*))*) => (exp_id_tuple!(($($v)* exp_id!(*$x$(($($p)*))*)), ));
     (($($v:tt)*), $(($($p:tt)*))+) => (exp_id_tuple!(($($v)* exp_id!($(($($p)*))*)), ));
     (($($v:tt)*), $x:ident$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($x$(($($p)*))*)), $($rest)*));
-    (($($v:tt)*), *$x:ident$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!(*$x$(($($p)*))*)), $($rest)*));
     (($($v:tt)*), $(($($p:tt)*))+, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($(($($p)*))*)), $($rest)*));
 }

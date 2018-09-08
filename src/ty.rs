@@ -1,4 +1,5 @@
-use envs::LocalEnvs;
+use envs::{ TypeVal, LocalEnvs };
+use id::ID;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Variance {
@@ -15,7 +16,7 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeID {
-    Gen(usize, Vec<(Variance, TypeID)>),
+    Gen(ID<TypeVal>, Vec<(Variance, TypeID)>),
     Tuple(Vec<TypeID>),
 }
 
@@ -23,7 +24,7 @@ impl Type {
     pub fn to_id(&self, env: &LocalEnvs) -> Option<TypeID> {
         Some(match self {
             Type::Gen(t, gs) => {
-                let id = *env.ty.get_id(t)?;
+                let id = env.ty.get_id(t)?;
                 let ty = env.ty.get(id)?;
                 if ty.0.len() != gs.len() {
                     panic!("Generic parameter mismatch");

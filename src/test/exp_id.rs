@@ -2,7 +2,6 @@ use envs::Envs;
 use exp_id::ExpID;
 use ty::Variance::*;
 use ty::{ Variance, TypeID };
-use id::LocalID;
 
 #[test]
 fn type_check() {
@@ -20,7 +19,7 @@ fn type_check() {
 
     let env = env.local();
 
-    let exp = exp_id!(*succ_id(*zero_id));
+    let exp = exp_id!(succ_id(zero_id));
 
     assert_eq!(exp.type_check(&env), Some(type_id!(nat_id)));
 }
