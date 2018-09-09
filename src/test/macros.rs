@@ -63,3 +63,17 @@ macro_rules! exp_id_tuple {
     (($($v:tt)*) $x:ident$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($x$(($($p)*))*)) $($rest)*));
     (($($v:tt)*) $(($($p:tt)*))+, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($(($($p)*))*)) $($rest)*));
 }
+
+macro_rules! element {
+    (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec!()));
+    (struct $n:ident($($v:tt)*)) => (Element::Struct(stringify!($n).to_owned(), ttype_vec!(() $($v)*,)));
+    (enum $n:ident { $($v:tt)* }) => (Element::Enum(stringify!($n).to_owned(), enum_variants!(() $($v)*,)));
+    (let $n:ident = $($e:tt)*) => (Element::Let(stringify!($n).to_owned(), None, exp!($($e)*)));
+    (let $n:ident: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))* = $($e:tt)*) => (Element::Let(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($gs)*])*$(($($ps)*))*)), exp!($($e)*)));
+}
+
+macro_rules! enum_variants {
+    (($($v:tt)*)$(,)* ) => (vec!($($v)*));
+    (($($v:tt)*) $n:ident, $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), vec!()),) $($rest)*));
+    (($($v:tt)*) $n:ident($($t:tt)*), $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), ttype_vec!(() $($t)*,)),) $($rest)*));
+}

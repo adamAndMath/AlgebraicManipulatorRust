@@ -4,13 +4,13 @@ use exp_id::ExpID;
 use ty::{ Variance, TypeID };
 use id::ID;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ExpVal {
     val: Option<ExpID>,
     ty: TypeID,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypeVal {
     gen: Vec<Variance>,
     atoms: Vec<ID<ExpVal>>,
