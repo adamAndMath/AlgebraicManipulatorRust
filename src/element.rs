@@ -65,8 +65,10 @@ impl Element {
                         }
                     }
                     let t = if let [t] = &ts[..] {t.clone()} else {TypeID::Tuple(ts.clone())};
-                    (Some(ExpID::Lambda(ts, Box::new(e_id))), t);
+                    ExpVal::new(ExpID::Lambda(ts, Box::new(e_id)), t)
                 };
+
+                env.exp.add(n.clone(), f);
             }
         }
 
