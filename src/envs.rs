@@ -51,6 +51,14 @@ impl TypeVal {
     pub fn push_comp(&mut self, id: ID<ExpVal>) {
         self.comps.push(id);
     }
+
+    pub fn contains_atom(&self, id: &ID<ExpVal>) -> bool {
+        self.atoms.contains(id)
+    }
+
+    pub fn contains_comp(&self, id: &ID<ExpVal>) -> bool {
+        self.comps.contains(id)
+    }
 }
 
 #[derive(Debug)]

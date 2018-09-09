@@ -1,4 +1,5 @@
 use exp_id::ExpID;
+use pattern::Pattern;
 use envs::{ ExpVal, LocalEnvs };
 use ty::Type;
 
@@ -7,6 +8,7 @@ pub enum Exp {
     Tuple(Vec<Exp>),
     Lambda(Vec<(String, Type)>, Box<Exp>),
     Call(Box<Exp>, Box<Exp>),
+    Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
 
 impl Exp {
@@ -19,7 +21,16 @@ impl Exp {
                 let ts: Vec<_> = ps.iter().map(|(_,p)|p.ty()).collect();
                 ExpID::Lambda(ts, Box::new(e.to_id(&env.scope(ps))?))
             },
-            Exp::Call(f, e) => ExpID::Call(Box::new(f.to_id(env)?), Box::new(e.to_id(env)?))
+            Exp::Call(f, e) => ExpID::Call(Box::new(f.to_id(env)?), Box::new(e.to_id(env)?)),
+            Exp::Match(e, ps) => {
+                let e_id = e.to_id(env)?;
+                let e_ty = e_id.type_check(env)?;
+
+                ExpID::Match(Box::new(e_id), ps.into_iter().map(|(p,e)|{
+                    let (p, v) = p.to_id(&e_ty, env)?;
+                    Some((p, e.to_id(&env.scope(v))?))
+                }).collect::<Option<_>>()?)
+            },
         })
     }
 }

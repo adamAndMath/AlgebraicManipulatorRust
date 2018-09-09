@@ -1,5 +1,6 @@
 use id::*;
 use ty::{ Variance::*, TypeID };
+use pattern::PatternID;
 use envs::{ ExpVal, LocalEnvs };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -8,6 +9,7 @@ pub enum ExpID {
     Tuple(Vec<ExpID>),
     Lambda(Vec<TypeID>, Box<ExpID>),
     Call(Box<ExpID>, Box<ExpID>),
+    Match(Box<ExpID>, Vec<(PatternID, ExpID)>),
 }
 
 impl ExpID {
@@ -44,7 +46,8 @@ impl ExpID {
                 } else {
                     panic!("Not a function");
                 }
-            }
+            },
+            ExpID::Match(_, ps) => TypeID::Tuple(ps.into_iter().map(|(p,e)|e.type_check(&env.scope_anon(p.bound()))).collect::<Option<_>>()?),
         })
     }
 }

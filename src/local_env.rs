@@ -29,7 +29,7 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
             LocalEnv::Scope(env, m, v) =>
                 m.get(name).map(|id|LocalID::new(*id)).or_else(||
                     Some(match env.get_id(name)? {
-                        LocalID::Global(id, p) => LocalID::Global(id, p),
+                        LocalID::Global(id) => LocalID::Global(id),
                         LocalID::Local(id, p) => LocalID::Local(id+v.len(), p),
                     })
                 ),
@@ -38,9 +38,9 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
 
     pub fn get<I: Into<LocalID<T>>>(&self, id: I) -> Option<&T> {
         match (self, id.into()) {
-            (LocalEnv::Base(env), LocalID::Global(id, _)) => env.get(ID::new(id)),
+            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id),
             (LocalEnv::Base(_), LocalID::Local(_, _)) => panic!("Unknown ID"),
-            (LocalEnv::Scope(env, _, _), LocalID::Global(id, p)) => env.get(LocalID::Global(id, p)),
+            (LocalEnv::Scope(env, _, _), LocalID::Global(id)) => env.get(LocalID::Global(id)),
             (LocalEnv::Scope(env, _, v), LocalID::Local(id, p)) =>
                 if v.len() > id {
                     v.get(id)
