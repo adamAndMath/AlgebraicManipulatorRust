@@ -1,13 +1,14 @@
+use predef::*;
 use envs::*;
 use exp::Exp;
-use ty::{ Variance::*, * };
+use ty::*;
 use element::Element;
 
 
 #[test]
 fn struct_empty() {
-    let mut exps = vec!();
-    let mut tys = vec!();
+    let (mut exps, mut tys) = predef();
+    let lens = (exps.len(), tys.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys);
         element!(struct Test).define(&mut env).unwrap();
@@ -21,17 +22,16 @@ fn struct_empty() {
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
-    assert_eq!(exps.len(), 1);
-    assert_eq!(tys.len(), 1);
+    assert_eq!((exps.len(), tys.len()), (lens.0+1, lens.1+1));
 }
 
 #[test]
 fn struct_tuple() {
-    let mut exps = vec!();
-    let mut tys = vec!();
+    let (mut exps, mut tys) = predef();
+    let lens = (exps.len(), tys.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys);
-        env.ty.add("fn".to_owned(), TypeVal::new(vec!(Contravariant, Covariant)));
+        env.ty.alias("fn".to_owned(), FN_ID);
         element!(struct A).define(&mut env).unwrap();
         element!(struct B).define(&mut env).unwrap();
         element!(struct Test(A, B)).define(&mut env).unwrap();
@@ -45,17 +45,15 @@ fn struct_tuple() {
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
-    assert_eq!(exps.len(), 3);
-    assert_eq!(tys.len(), 4);
+    assert_eq!((exps.len(), tys.len()), (lens.0+3, lens.1+3));
 }
 
 #[test]
 fn letting() {
-    let mut exps = vec!();
-    let mut tys = vec!();
+    let (mut exps, mut tys) = predef();
+    let lens = (exps.len(), tys.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys);
-        env.ty.add("fn".to_owned(), TypeVal::new(vec!(Contravariant, Covariant)));
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).unwrap();
         element!(let two = Succ(Succ(Zero))).define(&mut env).unwrap();
         element!(let two_marked: Nat = Succ(Succ(Zero))).define(&mut env).unwrap();
@@ -63,6 +61,5 @@ fn letting() {
         assert_eq!(env.exp.get_id("two").and_then(|id|env.exp.get(id)), env.exp.get_id("two_marked").and_then(|id|env.exp.get(id)));
     }
 
-    assert_eq!(exps.len(), 4);
-    assert_eq!(tys.len(), 2);
+    assert_eq!((exps.len(), tys.len()), (lens.0+4, lens.1+1));
 }

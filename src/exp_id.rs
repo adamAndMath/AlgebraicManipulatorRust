@@ -1,3 +1,4 @@
+use predef::*;
 use id::*;
 use ty::{ Variance::*, TypeID };
 use pattern::PatternID;
@@ -24,14 +25,14 @@ impl ExpID {
                     TypeID::Tuple(xs.clone())
                 };
                 let b = e.type_check(&env.scope_anon(xs.clone().into_iter().map(ExpVal::new_empty).collect()))?;
-                TypeID::Gen(ID::new(0), vec![(Contravariant, p), (Covariant, b)])
+                TypeID::Gen(FN_ID.into(), vec![(Contravariant, p), (Covariant, b)])
             },
             ExpID::Call(f, e) => {
                 let f = f.type_check(env)?;
                 let e = e.type_check(env)?;
                 
                 if let TypeID::Gen(f_id, v) = f {
-                    if f_id != ID::new(0) {
+                    if f_id != FN_ID.into() {
                         panic!("Not a function");
                     }
                     if let [(Contravariant, ref p), (Covariant, ref b)] = v[..] {

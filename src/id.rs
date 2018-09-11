@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct ID<T: ?Sized>(pub usize, PhantomData<T>);
+pub struct ID<T: ?Sized>(pub usize, pub PhantomData<T>);
 
 #[derive(Debug)]
 pub enum LocalID<T: ?Sized> {

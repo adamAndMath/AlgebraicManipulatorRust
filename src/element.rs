@@ -1,3 +1,4 @@
+use predef::*;
 use envs::*;
 use exp::Exp;
 use exp_id::ExpID;
@@ -22,7 +23,7 @@ impl Element {
                 } else {
                     let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local())?;
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(vec!()));
-                    let f_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(ID::new(0), vec!((Contravariant, p), (Covariant, TypeID::Gen(ty_id, vec!()))))));
+                    let f_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, TypeID::Gen(ty_id.into(), vec!()))))));
                     env.ty.get_mut(ty_id).unwrap().push_comp(f_id);
                 }
             },
@@ -34,7 +35,7 @@ impl Element {
                         env.ty.get_mut(ty_id).unwrap().push_atom(v_id);
                     } else {
                         let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local())?;
-                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(TypeID::Gen(ID::new(0), vec!((Contravariant, p), (Covariant, TypeID::Gen(ty_id, vec!()))))));
+                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, TypeID::Gen(ty_id.into(), vec!()))))));
                         env.ty.get_mut(ty_id).unwrap().push_comp(v_id);
                     }
                 }

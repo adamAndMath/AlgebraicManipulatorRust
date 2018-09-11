@@ -1,10 +1,10 @@
+use predef::*;
 use envs::*;
 use ty::*;
 
 #[test]
 fn to_id() {
-    let mut exps = vec![];
-    let mut tys = vec![];
+    let (mut exps,  mut tys) = predef();
     let mut env = Envs::new(&mut exps, &mut tys);
     
     let a_id = env.ty.add("A".to_owned(), TypeVal::new(vec!()));

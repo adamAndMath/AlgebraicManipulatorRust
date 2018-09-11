@@ -1,15 +1,14 @@
+use predef::*;
 use envs::*;
 use exp_id::ExpID;
 use exp::Exp;
-use ty::{ Variance::*, Type };
+use ty::Type;
 
 #[test]
 fn succ_zero() {
-    let mut exps = vec![];
-    let mut tys = vec![];
+    let (mut exps, mut tys) = predef();
     let mut env = Envs::new(&mut exps, &mut tys);
-    
-    env.ty.add("fn".to_owned(), TypeVal::new(vec!(Contravariant, Covariant)));
+    env.ty.alias("fn".to_owned(), FN_ID);
 
     let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
 
