@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
 use envs::*;
 use id::ID;
-use ty::{ Variance::*, TypeID };
+use variance::Variance::*;
+use ty::TypeID;
 
 pub const BOOL_ID: ID<TypeVal> = ID(0, PhantomData);
 pub const FN_ID: ID<TypeVal> = ID(1, PhantomData);

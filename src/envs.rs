@@ -1,7 +1,8 @@
 use env::Env;
 use local_env::LocalEnv;
 use exp_id::ExpID;
-use ty::{ Variance, TypeID };
+use variance::Variance;
+use ty::TypeID;
 use id::ID;
 
 #[derive(Debug, Clone, PartialEq)]

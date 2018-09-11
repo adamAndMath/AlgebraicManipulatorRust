@@ -1,6 +1,7 @@
 use predef::*;
 use id::*;
-use ty::{ Variance::*, TypeID };
+use variance::Variance::*;
+use ty::TypeID;
 use pattern::PatternID;
 use envs::{ ExpVal, LocalEnvs };
 

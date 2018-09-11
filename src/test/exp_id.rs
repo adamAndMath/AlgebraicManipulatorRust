@@ -1,7 +1,8 @@
 use predef::*;
 use envs::*;
 use exp_id::ExpID;
-use ty::{ Variance, TypeID };
+use variance::Variance;
+use ty::TypeID;
 
 #[test]
 fn type_check() {

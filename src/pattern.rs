@@ -1,7 +1,8 @@
 use predef::*;
 use envs::*;
 use id::*;
-use ty::{ Variance::*, TypeID };
+use variance::Variance::*;
+use ty::TypeID;
 
 #[derive(Debug)]
 pub enum Pattern {

@@ -2,7 +2,8 @@ use predef::*;
 use envs::*;
 use exp::Exp;
 use exp_id::ExpID;
-use ty::{ Variance::*, Type, TypeID };
+use variance::Variance::*;
+use ty::{ Type, TypeID };
 
 pub enum Element {
     Struct(String, Vec<Type>),
