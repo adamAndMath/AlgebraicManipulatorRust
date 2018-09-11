@@ -3,7 +3,6 @@ use envs::*;
 use exp::Exp;
 use exp_id::ExpID;
 use ty::{ Variance::*, Type, TypeID };
-use id::ID;
 
 pub enum Element {
     Struct(String, Vec<Type>),
@@ -18,7 +17,7 @@ impl Element {
             Element::Struct(n, ps) => {
                 if ps.is_empty() {
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(vec!()));
-                    let e_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(ty_id, vec!())));
+                    let e_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(ty_id.into(), vec!())));
                     env.ty.get_mut(ty_id).unwrap().push_atom(e_id);
                 } else {
                     let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local())?;
@@ -31,7 +30,7 @@ impl Element {
                 let ty_id = env.ty.add(n.clone(), TypeVal::new(vec!()));
                 for (v, ps) in vs {
                     if ps.is_empty() {
-                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(TypeID::Gen(ty_id, vec!())));
+                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(TypeID::Gen(ty_id.into(), vec!())));
                         env.ty.get_mut(ty_id).unwrap().push_atom(v_id);
                     } else {
                         let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local())?;

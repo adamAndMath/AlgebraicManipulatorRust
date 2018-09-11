@@ -1,3 +1,4 @@
+use predef::*;
 use envs::*;
 use id::*;
 use ty::{ Variance::*, TypeID };
@@ -34,7 +35,7 @@ impl Pattern {
                         },
                     _ =>  Some((PatternID::Var(ty.clone()), vec!((s.clone(), ExpVal::new_empty(ty.clone()))))),
                 },
-            (Pattern::Func(s, p), TypeID::Gen(f_id, gs)) if f_id != &ID::new(0) => {
+            (Pattern::Func(s, p), TypeID::Gen(f_id, gs)) if f_id != &FN_ID.into() => {
                 let (in_id, out_id) = match &gs[..] {
                     [(Contravariant, in_id), (Covariant, out_id)] => (in_id, out_id),
                     _ => return None,

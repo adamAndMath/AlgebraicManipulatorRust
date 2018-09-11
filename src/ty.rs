@@ -1,5 +1,5 @@
 use envs::{ TypeVal, LocalEnvs };
-use id::ID;
+use id::LocalID;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Variance {
@@ -16,7 +16,7 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TypeID {
-    Gen(ID<TypeVal>, Vec<(Variance, TypeID)>),
+    Gen(LocalID<TypeVal>, Vec<(Variance, TypeID)>),
     Tuple(Vec<TypeID>),
 }
 
