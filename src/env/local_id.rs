@@ -11,6 +11,13 @@ impl<T: ?Sized> LocalID<T> {
     pub fn new(id: usize) -> Self {
         LocalID::Local(id, PhantomData)
     }
+
+    pub fn push_local(self, amount: usize) -> Self {
+        match self {
+            LocalID::Global(id) => LocalID::Global(id),
+            LocalID::Local(id, p) => LocalID::Local(id + amount, p),
+        }
+    }
 }
 
 impl<T: ?Sized> From<ID<T>> for LocalID<T> {

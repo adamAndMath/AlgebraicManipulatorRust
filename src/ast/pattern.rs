@@ -2,6 +2,7 @@ use predef::*;
 use env::LocalID;
 use envs::{ LocalEnvs, ExpVal };
 use id::renamed::{ TypeID, PatternID };
+use variance::Variance::*;
 
 #[derive(Debug)]
 pub enum Pattern {
@@ -52,7 +53,8 @@ impl Pattern {
 
                 let mut ps_id = vec!();
                 let mut vs = vec!();
-                for (p, v) in ps.into_iter().zip(ts).map(|(p, t)|p.to_id(t, env)).collect::<Option<Vec<_>>>()? {
+                for (p, t) in ps.into_iter().zip(ts) {
+                    let (p, v) = p.to_id(t, env)?;
                     ps_id.push(p);
                     vs.extend(v);
                 }
