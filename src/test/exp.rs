@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use exp_id::ExpID;
-use ast::{ ty::Type, exp::Exp };
+use ast::{ Type, Exp };
 
 #[test]
 fn succ_zero() {

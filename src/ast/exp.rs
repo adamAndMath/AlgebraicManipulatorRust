@@ -1,6 +1,6 @@
 use exp_id::ExpID;
 use envs::{ ExpVal, LocalEnvs };
-use super::{ ty::Type, pattern::Pattern };
+use super::{ Type, Pattern };
 
 pub enum Exp {
     Var(String),

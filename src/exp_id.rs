@@ -1,5 +1,5 @@
 use predef::*;
-use env::local_id::LocalID;
+use env::LocalID;
 use variance::Variance::*;
 use ty::TypeID;
 use pattern::PatternID;

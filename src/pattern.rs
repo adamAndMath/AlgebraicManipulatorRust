@@ -1,7 +1,5 @@
-use predef::*;
-use env::{ id::ID, local_id::LocalID };
+use env::ID;
 use envs::*;
-use variance::Variance::*;
 use ty::TypeID;
 
 #[derive(Debug, PartialEq, Clone)]

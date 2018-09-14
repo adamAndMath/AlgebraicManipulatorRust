@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
-use ast::ty::Type;
-use ty::*;
+use ast::Type;
+use ty::TypeID;
 
 #[test]
 fn to_id() {

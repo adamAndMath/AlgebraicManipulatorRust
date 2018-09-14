@@ -1,5 +1,5 @@
 use predef::*;
-use env::local_id::LocalID;
+use env::LocalID;
 use envs::{ LocalEnvs, ExpVal };
 use pattern::PatternID;
 use ty::TypeID;

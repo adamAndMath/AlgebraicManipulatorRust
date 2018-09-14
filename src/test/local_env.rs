@@ -1,4 +1,4 @@
-use env::{ id::ID, local_id::LocalID, env::Env, local_env::LocalEnv };
+use env::{ ID, LocalID, Env, LocalEnv };
 
 #[test]
 fn create_empty_env() {

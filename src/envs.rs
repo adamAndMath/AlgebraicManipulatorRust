@@ -1,4 +1,4 @@
-use env::{ id::ID, env::Env, local_env::LocalEnv };
+use env::{ ID, Env, LocalEnv };
 use exp_id::ExpID;
 use variance::Variance;
 use ty::TypeID;

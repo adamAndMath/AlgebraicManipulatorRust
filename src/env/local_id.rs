@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use super::id::ID;
+use super::ID;
 
 #[derive(Debug)]
 pub enum LocalID<T: ?Sized> {

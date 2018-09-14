@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use super::id::ID;
+use super::ID;
 
 #[derive(Debug)]
 pub struct Env<'a, T: 'a>(HashMap<String, ID<T>>, &'a mut Vec<T>);

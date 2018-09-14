@@ -1,6 +1,6 @@
 use predef::*;
 use envs::*;
-use super::{ ty::Type, exp::Exp };
+use super::{ Type, Exp };
 use exp_id::ExpID;
 use variance::Variance::*;
 use ty::TypeID;
