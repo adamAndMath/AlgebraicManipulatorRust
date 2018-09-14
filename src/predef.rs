@@ -23,3 +23,16 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>) {
         ],
     )
 }
+
+pub fn get_fn_types(ty: Type) -> Option<(Type, Type)> {
+    match ty {
+        Type::Gen(f, v) => {
+            if f != FN_ID.into() { return None }
+            match v[..] {
+                [(Contravariant, ref p), (Covariant, ref b)] => Some((p.clone(), b.clone())),
+                _ => None,
+            }
+        },
+        _ => None,
+    }
+}

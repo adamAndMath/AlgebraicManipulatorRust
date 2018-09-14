@@ -31,22 +31,11 @@ impl Exp {
                 let f = f.type_check(env)?;
                 let e = e.type_check(env)?;
                 
-                if let Type::Gen(f_id, v) = f {
-                    if f_id != FN_ID.into() {
-                        panic!("Not a function");
-                    }
-                    if let [(Contravariant, ref p), (Covariant, ref b)] = v[..] {
-                        if p == &e {
-                            b.clone()
-                        } else {
-                            panic!("Type missmatch");
-                        }
-                    } else {
-                        unreachable!()
-                    }
-                } else {
-                    panic!("Not a function");
-                }
+                let (p, b) = get_fn_types(f)?;
+
+                if p != e { return None; }
+                
+                b
             },
             Exp::Match(_, ps) => Type::Tuple(ps.into_iter().map(|(p,e)|e.type_check(&env.scope_anon(p.bound()))).collect::<Option<_>>()?),
         })
