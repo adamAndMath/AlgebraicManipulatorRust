@@ -2,9 +2,6 @@
 mod macros;
 
 mod env;
-mod local_env;
-mod exp_id;
-mod exp;
+mod ast;
+mod id;
 mod variance;
-mod ty;
-mod element;
