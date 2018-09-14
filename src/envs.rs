@@ -1,9 +1,7 @@
-use env::Env;
-use local_env::LocalEnv;
+use env::{ id::ID, env::Env, local_env::LocalEnv };
 use exp_id::ExpID;
 use variance::Variance;
 use ty::TypeID;
-use id::ID;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpVal {
@@ -84,8 +82,8 @@ impl<'a> Envs<'a> {
 
     pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {
         LocalEnvs {
-            exp: self.exp.local(),
-            ty: self.ty.local(),
+            exp: LocalEnv::new(&self.exp),
+            ty: LocalEnv::new(&self.ty),
         }
     }
 }

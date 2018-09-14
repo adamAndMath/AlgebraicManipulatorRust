@@ -1,6 +1,6 @@
 use predef::*;
+use env::{ id::ID, local_id::LocalID };
 use envs::*;
-use id::*;
 use variance::Variance::*;
 use ty::TypeID;
 

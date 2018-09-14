@@ -1,6 +1,6 @@
 use envs::{ TypeVal, LocalEnvs };
 use variance::Variance;
-use id::LocalID;
+use env::local_id::LocalID;
 
 #[derive(Debug, Clone)]
 pub enum Type {

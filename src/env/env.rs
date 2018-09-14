@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use local_env::LocalEnv;
-use id::ID;
+use super::id::ID;
 
 #[derive(Debug)]
 pub struct Env<'a, T: 'a>(HashMap<String, ID<T>>, &'a mut Vec<T>);
@@ -14,10 +13,6 @@ impl<'a, T: 'a> Env<'a, T> {
 
     pub fn scope<'b>(&'b mut self) -> Env<'b, T> where 'a: 'b {
         Env(self.0.clone(), &mut self.1)
-    }
-
-    pub fn local<'b>(&'b self) -> LocalEnv<'b, T> where 'a: 'b {
-        LocalEnv::new(&self)
     }
 
     pub fn add(&mut self, name: String, element: T) -> ID<T> {

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
+use env::id::ID;
 use envs::*;
-use id::ID;
 use variance::Variance::*;
 use ty::TypeID;
 

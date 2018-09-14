@@ -1,18 +1,17 @@
-use env::Env;
-use id::*;
+use env::{ id::ID, local_id::LocalID, env::Env, local_env::LocalEnv };
 
 #[test]
 fn create_empty_env() {
     let mut data = Vec::<&str>::new();
     let env = Env::new(&mut data);
-    env.local();
+    LocalEnv::new(&env);
 }
 
 #[test]
 fn create_env_with_a_b_c() {
     let mut data = vec!["a", "b", "c"];
     let env = Env::new(&mut data);
-    let env = env.local();
+    let env = LocalEnv::new(&env);
 
     assert_eq!(env.get(ID::new(0)), Some(&"a"));
     assert_eq!(env.get(ID::new(1)), Some(&"b"));
@@ -24,7 +23,7 @@ fn add_data_to_empty_env() {
     let mut data = Vec::<&str>::new();
     {
         let env = Env::new(&mut data);
-        let env = env.local();
+        let env = LocalEnv::new(&env);
         let env = env.scope(vec!(("a".to_owned(), "1"), ("b".to_owned(), "2"), ("c".to_owned(), "3")));
 
         assert_eq!(env.get_id("a"), Some(LocalID::new(0)));
@@ -44,7 +43,7 @@ fn add_data_in_and_after_scope() {
     let mut data = vec!("Not named");
     {
         let env = Env::new(&mut data);
-        let env = env.local();
+        let env = LocalEnv::new(&env);
         {
             let scope1 = env.scope(vec![("x".to_owned(), "1st"), ("y".to_owned(), "2nd")]);
             {

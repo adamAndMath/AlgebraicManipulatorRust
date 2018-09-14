@@ -1,8 +1,6 @@
 mod env;
-mod local_env;
 mod envs;
 mod predef;
-mod id;
 mod pattern;
 mod exp;
 mod exp_id;
