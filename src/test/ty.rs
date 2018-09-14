@@ -1,5 +1,6 @@
 use predef::*;
 use envs::*;
+use ast::ty::Type;
 use ty::*;
 
 #[test]

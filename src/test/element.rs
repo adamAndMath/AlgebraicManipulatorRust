@@ -1,8 +1,6 @@
 use predef::*;
 use envs::*;
-use exp::Exp;
-use ty::*;
-use element::Element;
+use ast::{ ty::Type, exp::Exp, element::Element};
 
 
 #[test]
