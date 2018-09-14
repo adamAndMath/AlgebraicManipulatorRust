@@ -1,5 +1,5 @@
-use exp_id::ExpID;
 use envs::{ ExpVal, LocalEnvs };
+use id::renamed::ExpID;
 use super::{ Type, Pattern };
 
 pub enum Exp {

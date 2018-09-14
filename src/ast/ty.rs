@@ -1,5 +1,5 @@
 use envs::LocalEnvs;
-use ty::TypeID;
+use id::renamed::TypeID;
 
 #[derive(Debug, Clone)]
 pub enum Type {

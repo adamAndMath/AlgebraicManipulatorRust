@@ -1,9 +1,8 @@
 use predef::*;
 use envs::*;
 use super::{ Type, Exp };
-use exp_id::ExpID;
 use variance::Variance::*;
-use ty::TypeID;
+use id::renamed::{ TypeID, ExpID };
 
 pub enum Element {
     Struct(String, Vec<Type>),

@@ -1,8 +1,7 @@
 use predef::*;
 use env::LocalID;
 use envs::{ LocalEnvs, ExpVal };
-use pattern::PatternID;
-use ty::TypeID;
+use id::renamed::{ TypeID, PatternID };
 
 #[derive(Debug)]
 pub enum Pattern {

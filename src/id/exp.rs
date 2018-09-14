@@ -1,38 +1,37 @@
 use predef::*;
 use env::LocalID;
 use variance::Variance::*;
-use ty::TypeID;
-use pattern::PatternID;
+use super::{ Type, Pattern };
 use envs::{ ExpVal, LocalEnvs };
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum ExpID {
+pub enum Exp {
     Var(LocalID<ExpVal>),
-    Tuple(Vec<ExpID>),
-    Lambda(Vec<TypeID>, Box<ExpID>),
-    Call(Box<ExpID>, Box<ExpID>),
-    Match(Box<ExpID>, Vec<(PatternID, ExpID)>),
+    Tuple(Vec<Exp>),
+    Lambda(Vec<Type>, Box<Exp>),
+    Call(Box<Exp>, Box<Exp>),
+    Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
 
-impl ExpID {
-    pub fn type_check(&self, env: &LocalEnvs) -> Option<TypeID> {
+impl Exp {
+    pub fn type_check(&self, env: &LocalEnvs) -> Option<Type> {
         Some(match self {
-            ExpID::Var(x) => env.exp.get(*x)?.ty(),
-            ExpID::Tuple(v) => TypeID::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Option<_>>()?),
-            ExpID::Lambda(xs, e) => {
+            Exp::Var(x) => env.exp.get(*x)?.ty(),
+            Exp::Tuple(v) => Type::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Option<_>>()?),
+            Exp::Lambda(xs, e) => {
                 let p = if let [ref x] = xs[..] {
                     x.clone()
                 } else {
-                    TypeID::Tuple(xs.clone())
+                    Type::Tuple(xs.clone())
                 };
                 let b = e.type_check(&env.scope_anon(xs.clone().into_iter().map(ExpVal::new_empty).collect()))?;
-                TypeID::Gen(FN_ID.into(), vec![(Contravariant, p), (Covariant, b)])
+                Type::Gen(FN_ID.into(), vec![(Contravariant, p), (Covariant, b)])
             },
-            ExpID::Call(f, e) => {
+            Exp::Call(f, e) => {
                 let f = f.type_check(env)?;
                 let e = e.type_check(env)?;
                 
-                if let TypeID::Gen(f_id, v) = f {
+                if let Type::Gen(f_id, v) = f {
                     if f_id != FN_ID.into() {
                         panic!("Not a function");
                     }
@@ -49,7 +48,7 @@ impl ExpID {
                     panic!("Not a function");
                 }
             },
-            ExpID::Match(_, ps) => TypeID::Tuple(ps.into_iter().map(|(p,e)|e.type_check(&env.scope_anon(p.bound()))).collect::<Option<_>>()?),
+            Exp::Match(_, ps) => Type::Tuple(ps.into_iter().map(|(p,e)|e.type_check(&env.scope_anon(p.bound()))).collect::<Option<_>>()?),
         })
     }
 }

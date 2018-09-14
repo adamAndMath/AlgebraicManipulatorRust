@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use env::ID;
 use envs::*;
 use variance::Variance::*;
-use ty::TypeID;
+use id::Type;
 
 pub const BOOL_ID: ID<TypeVal> = ID(0, PhantomData);
 pub const FN_ID: ID<TypeVal> = ID(1, PhantomData);
@@ -14,8 +14,8 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>) {
 
     (
         vec![
-            ExpVal::new_empty(TypeID::Gen(BOOL_ID.into(), vec![])),
-            ExpVal::new_empty(TypeID::Gen(BOOL_ID.into(), vec![])),
+            ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![])),
+            ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![])),
         ],
         vec![
             bool_ty,

@@ -1,12 +1,11 @@
 use env::{ ID, Env, LocalEnv };
-use exp_id::ExpID;
 use variance::Variance;
-use ty::TypeID;
+use id::{ Type, Exp };
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpVal {
-    val: Option<ExpID>,
-    ty: TypeID,
+    val: Option<Exp>,
+    ty: Type,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -17,19 +16,19 @@ pub struct TypeVal {
 }
 
 impl ExpVal {
-    pub fn new_empty(ty: TypeID) -> Self {
+    pub fn new_empty(ty: Type) -> Self {
         ExpVal { val: None, ty }
     }
 
-    pub fn new(e: ExpID, ty: TypeID) -> Self {
+    pub fn new(e: Exp, ty: Type) -> Self {
         ExpVal { val: Some(e), ty }
     }
 
-    pub fn val(&self) -> Option<ExpID> {
+    pub fn val(&self) -> Option<Exp> {
         self.val.clone()
     }
 
-    pub fn ty(&self) -> TypeID {
+    pub fn ty(&self) -> Type {
         self.ty.clone()
     }
 }

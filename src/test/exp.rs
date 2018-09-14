@@ -1,6 +1,6 @@
 use predef::*;
 use envs::*;
-use exp_id::ExpID;
+use id::renamed::ExpID;
 use ast::{ Type, Exp };
 
 #[test]
