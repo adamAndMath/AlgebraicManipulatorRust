@@ -1,6 +1,7 @@
 use predef::*;
 use envs::*;
-use ast::{ Type, Exp, Element};
+use variance::Variance;
+use ast::{ Type, Pattern, Exp, Element};
 
 
 #[test]
@@ -16,7 +17,7 @@ fn struct_empty() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_atom(e_id);
 
-        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id)));
+        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id, 0)));
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
@@ -39,7 +40,7 @@ fn struct_tuple() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_comp(e_id);
 
-        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id)));
+        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id, 0)));
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
@@ -60,4 +61,45 @@ fn letting() {
     }
 
     assert_eq!((exps.len(), tys.len()), (lens.0+4, lens.1+1));
+}
+
+#[test]
+fn func() {
+    let (mut exps, mut tys) = predef();
+    let lens = (exps.len(), tys.len());
+    {
+        let mut env = Envs::new(&mut exps, &mut tys);
+        env.ty.alias("fn".to_owned(), FN_ID);
+        element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
+        element!(
+            fn add(a: Nat, b: Nat) -> Nat = match(b, {
+                Zero => a,
+                Succ(p: Nat) => Succ(add(a, p))
+            })
+        ).define(&mut env).expect("Failed to define add");
+
+        let env = env.local();
+        let add_id = env.exp.get_id("add").expect("add has not been named");
+        let add = env.exp.get(add_id).expect("add has not been added to the environment");
+        let exp = exp!(
+            (a: Nat, b: Nat) -> match(b, {
+                Zero => a,
+                Succ(p: Nat) => Succ(add(a, p))
+            })
+        ).to_id(&env).expect("Failed to build lambda");
+
+        assert_eq!(add.val().expect("No expresion in add"), exp);
+        assert_eq!(add.ty(), ttype!(fn[(Nat, Nat), Nat]).to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
+    }
+    
+    assert_eq!((exps.len(), tys.len()), (lens.0+3, lens.1+1));
+}
+
+#[test]
+fn lists() {
+    let (mut exps, mut tys) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys);
+    
+    element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
+    element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
 }

@@ -5,6 +5,7 @@ use id::{ Type, Exp };
 #[derive(Debug, Clone, PartialEq)]
 pub struct ExpVal {
     val: Option<Exp>,
+    gen: usize,
     ty: Type,
 }
 
@@ -16,12 +17,20 @@ pub struct TypeVal {
 }
 
 impl ExpVal {
-    pub fn new_empty(ty: Type) -> Self {
-        ExpVal { val: None, ty }
+    pub fn new_empty(ty: Type, gen: usize) -> Self {
+        ExpVal { val: None, ty, gen }
     }
 
-    pub fn new(e: Exp, ty: Type) -> Self {
-        ExpVal { val: Some(e), ty }
+    pub fn new(e: Exp, ty: Type, gen: usize) -> Self {
+        ExpVal { val: Some(e), ty, gen }
+    }
+
+    pub fn set_val(&mut self, e: Exp) {
+        if self.val != None {
+            panic!("Value is set twice");
+        }
+
+        self.val = Some(e);
     }
 
     pub fn val(&self) -> Option<Exp> {

@@ -1,9 +1,10 @@
 use envs::LocalEnvs;
 use id::renamed::ExpID;
-use super::Pattern;
+use super::{ Type, Pattern };
 
+#[derive(Debug)]
 pub enum Exp {
-    Var(String),
+    Var(String, Vec<Type>),
     Tuple(Vec<Exp>),
     Lambda(Pattern, Box<Exp>),
     Call(Box<Exp>, Box<Exp>),
@@ -13,7 +14,7 @@ pub enum Exp {
 impl Exp {
     pub fn to_id(&self, env: &LocalEnvs) -> Option<ExpID> {
         Some(match self {
-            Exp::Var(x) => ExpID::Var(env.exp.get_id(x).unwrap()),
+            Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x)?, gs.into_iter().map(|g|g.to_id(env)).collect::<Option<_>>()?),
             Exp::Tuple(v) => ExpID::Tuple(v.into_iter().map(|e|e.to_id(env)).collect::<Option<_>>()?),
             Exp::Lambda(p, e) => {
                 let ns = p.bound();

@@ -30,7 +30,7 @@ impl Pattern {
 
     pub fn bound(&self) -> Vec<ExpVal> {
         match self {
-            Pattern::Var(ty) => vec!(ExpVal::new_empty(ty.clone())),
+            Pattern::Var(ty) => vec!(ExpVal::new_empty(ty.clone(), 0)),
             Pattern::Atom(_) => vec!(),
             Pattern::Comp(_, p) => p.bound(),
             Pattern::Tuple(ps) => ps.into_iter().flat_map(|p|p.bound()).collect(),

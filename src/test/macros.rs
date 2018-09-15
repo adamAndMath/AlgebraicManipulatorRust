@@ -16,6 +16,12 @@ macro_rules! type_id {
     (($($p:tt)*)) => (type_id_tuple!(() $($p)*,));
 }
 
+macro_rules! type_id_vec {
+    (($($v:tt)*)$(,)* ) => (vec!($($v)*));
+    (($($v:tt)*) $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) =>
+        (type_id_gen!(($($v)* type_id!($($t)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
+}
+
 macro_rules! type_id_gen {
     (($($v:tt)*)$(,)* ) => (vec!($($v)*));
     (($($v:tt)*)  $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) =>
@@ -34,34 +40,44 @@ macro_rules! type_id_tuple {
 }
 
 macro_rules! exp {
-    ($x:ident) => (Exp::Var(stringify!($x).to_owned()));
-    ($x:ident($($p:tt)*)) => (Exp::Call(Box::new(exp!($x)), Box::new(exp_tuple!(() $($p)*,))));
+    ($x:ident) => (Exp::Var(stringify!($x).to_owned(), vec![]));
+    ($x:ident[$($g:tt)*]) => (Exp::Var(stringify!($x).to_owned(), ttype_vec!(() $($g)*,)));
+    (match($($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, {$($m:tt)*})) =>
+        (Exp::Match(Box::new(exp!($($x)*$([$($g)*])*$(($($p)*))*)), exp_match!($($m)*)));
+    ($($x:ident):*$(($($p:tt)*))* -> $($rest:tt)*) => (Exp::Lambda(pattern!($($x):*$(($($p)*))*), Box::new(exp!($($rest)*))));
+    ($x:ident$([$($g:tt)*])*($($p:tt)*)) => (Exp::Call(Box::new(exp!($x$([$($g)*])*)), Box::new(exp_tuple!(() $($p)*,))));
     (($($p:tt)*)) => (exp_tuple!(() $($p)*,));
+}
+
+macro_rules! exp_match {
+    ($($($px:ident)*$(($($pp:tt)*))* => $($ex:ident)*$([$($eg:tt)*])*$(($($ep:tt)*))*),*) =>
+        (vec![$((pattern!($($px)*$(($($pp)*))*), exp!($($ex)*$([$($eg)*])*$(($($ep)*))*))),*]);
 }
 
 macro_rules! exp_tuple {
     ((exp!($($e:tt)*), )$(,)* ) => (exp!($($e)*));
     (($($v:tt)*)$(,)* ) => (Exp::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (exp_tuple!(($($v)* exp!($($x)*$(($($p)*))*)) $($rest)*));
+    (($($v:tt)*) $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) => (exp_tuple!(($($v)* exp!($($x)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
 }
 
 macro_rules! exp_id {
-    ($x:ident) => (ExpID::Var($x.into()));
-    ($x:ident($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x)), Box::new(exp_id_tuple!(() $($p)*,))));
+    ($x:ident) => (ExpID::Var($x.into(), vec![]));
+    ($x:ident[$($g:tt)*]) => (ExpID::Var($x.into(), type_id_vec!(() $($g)*)));
+    ($x:ident$([$($g:tt)*])*($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x$([$($g)*])*)), Box::new(exp_id_tuple!(() $($p)*,))));
     (($($p:tt)*)) => (exp_id_tuple!(() $($p)*,));
 }
 
 macro_rules! exp_id_tuple {
-    ((exp_id!($($e:tt)*))$(,)* ) => (exp_id!($($e)*));
+    ((exp_id!($($e:tt)*), )$(,)* ) => (exp_id!($($e)*));
     (($($v:tt)*), ) => (ExpID::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($($x)*$(($($p)*))*)) $($rest)*));
+    (($($v:tt)*) $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($($x)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
 }
 
 macro_rules! pattern {
     ($v:ident: $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*) => (Pattern::Var(stringify!($v).to_owned(), ttype!($($t)*$([$($g)*])*$(($($p)*))*)));
     ($a:ident) => (Pattern::Atom(stringify!($a).to_owned()));
     ($f:ident($($p:tt)*)) => (Pattern::Comp(stringify!($f).to_owned(), Box::new(pattern_tuple!(() $($p)*,))));
-    (($($t:tt)*)) => (pattern_tuple!(() $($p)*,))
+    (($($t:tt)*)) => (pattern_tuple!(() $($t)*,))
 }
 
 macro_rules! pattern_tuple {
@@ -85,11 +101,44 @@ macro_rules! pattern_id_tuple {
 }
 
 macro_rules! element {
-    (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec!()));
-    (struct $n:ident($($v:tt)*)) => (Element::Struct(stringify!($n).to_owned(), ttype_vec!(() $($v)*,)));
-    (enum $n:ident { $($v:tt)* }) => (Element::Enum(stringify!($n).to_owned(), enum_variants!(() $($v)*,)));
-    (let $n:ident = $($e:tt)*) => (Element::Let(stringify!($n).to_owned(), None, exp!($($e)*)));
-    (let $n:ident: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))* = $($e:tt)*) => (Element::Let(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($gs)*])*$(($($ps)*))*)), exp!($($e)*)));
+    (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec![], vec![]));
+    (struct $n:ident[$(g:tt)*]) =>
+        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), vec![]));
+    (struct $n:ident($($v:tt)*)) =>
+        (Element::Struct(stringify!($n).to_owned(), vec![], ttype_vec!(() $($v)*,)));
+    (struct $n:ident[$($g:tt)*]($($v:tt)*)) =>
+        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), ttype_vec!(() $($v)*,)));
+    (enum $n:ident { $($v:tt)* }) =>
+        (Element::Enum(stringify!($n).to_owned(), vec![], enum_variants!(() $($v)*,)));
+    (enum $n:ident[$($g:tt)*] { $($v:tt)* }) =>
+        (Element::Enum(stringify!($n).to_owned(), element_gen!(() $($g)*,), enum_variants!(() $($v)*,)));
+    (let $n:ident = $($e:tt)*) =>
+        (Element::Let(stringify!($n).to_owned(), vec![], None, exp!($($e)*)));
+    (let $n:ident[$($g:tt)*] = $($e:tt)*) =>
+        (Element::Let(stringify!($n).to_owned(), element_gen!(() $($g)*,), None, exp!($($e)*)));
+    (let $n:ident: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))* = $($e:tt)*) =>
+        (Element::Let(stringify!($n).to_owned(), vec![], Some(ttype!($($t)*$([$($gs)*])*$(($($ps)*))*)), exp!($($e)*)));
+    (let $n:ident[$($g:tt)*]: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))* = $($e:tt)*) =>
+        (Element::Let(stringify!($n).to_owned(), element_gen!(() $($g)*,), Some(ttype!($($t)*$([$($gs)*])*$(($($ps)*))*)), exp!($($e)*)));
+    (fn $n:ident($($p:tt)*) = $($rest:tt)*) =>
+        (Element::Func(stringify!($n).to_owned(), vec![], element_par!($($p)*), None, exp!($($rest)*)));
+    (fn $n:ident[$($g:ident),*]($($p:tt)*) = $($rest:tt)*) =>
+        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), None, exp!($($rest)*)));
+    (fn $n:ident($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
+        (Element::Func(stringify!($n).to_owned(), vec![], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
+    (fn $n:ident[$($g:tt)*]($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
+        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
+}
+
+macro_rules! element_gen {
+    (($($v:tt)*), ) => (vec!($($v)*));
+    (($($v:tt)*)  $x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Invariant    , stringify!($x).to_owned())), ) $($rest)*);
+    (($($v:tt)*) +$x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Covariant    , stringify!($x).to_owned())), ) $($rest)*);
+    (($($v:tt)*) -$x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Contravariant, stringify!($x).to_owned())), ) $($rest)*);
+}
+
+macro_rules! element_par {
+    ($($p:ident : $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))*),*) => (vec![$((stringify!($p).to_owned(), ttype!($($t)*$([$($tg)*])*$(($($tp)*))*))),*]);
 }
 
 macro_rules! enum_variants {
