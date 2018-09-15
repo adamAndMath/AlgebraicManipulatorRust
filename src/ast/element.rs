@@ -2,7 +2,7 @@ use predef::*;
 use envs::*;
 use super::{ Type, Exp };
 use variance::Variance::*;
-use id::renamed::{ TypeID, ExpID };
+use id::renamed::{ TypeID, PatternID, ExpID };
 
 pub enum Element {
     Struct(String, Vec<Type>),
@@ -54,7 +54,7 @@ impl Element {
                 let f = {
                     let env = env.local();
                     let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?)))).collect::<Option<Vec<_>>>()?;
-                    let ts = ps.iter().map(|(_,e)|e.ty()).collect::<Vec<_>>();
+                    let ts = ps.iter().map(|(_,e)|PatternID::Var(e.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
                     let e_id = e.to_id(&env)?;
                     let e_ty = e_id.type_check(&env)?;
@@ -64,8 +64,9 @@ impl Element {
                             return None;
                         }
                     }
-                    let t = if let [t] = &ts[..] {t.clone()} else {TypeID::Tuple(ts.clone())};
-                    ExpVal::new(ExpID::Lambda(ts, Box::new(e_id)), t)
+                    let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
+                    let t = p.type_check(&env)?;
+                    ExpVal::new(ExpID::Lambda(p, Box::new(e_id)), t)
                 };
 
                 env.exp.add(n.clone(), f);

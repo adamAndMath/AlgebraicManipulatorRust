@@ -12,6 +12,13 @@ impl<T: ?Sized> LocalID<T> {
         LocalID::Local(id, PhantomData)
     }
 
+    pub fn global(self) -> Option<ID<T>> {
+        match self {
+            LocalID::Global(id) => Some(id),
+            LocalID::Local(_, _) => None,
+        }
+    }
+
     pub fn push_local(self, amount: usize) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(id),

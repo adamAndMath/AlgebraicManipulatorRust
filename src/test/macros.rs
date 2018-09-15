@@ -57,6 +57,33 @@ macro_rules! exp_id_tuple {
     (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($($x)*$(($($p)*))*)) $($rest)*));
 }
 
+macro_rules! pattern {
+    ($v:ident: $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*) => (Pattern::Var(stringify!($v).to_owned(), ttype!($($t)*$([$($g)*])*$(($($p)*))*)));
+    ($a:ident) => (Pattern::Atom(stringify!($a).to_owned()));
+    ($f:ident($($p:tt)*)) => (Pattern::Comp(stringify!($f).to_owned(), Box::new(pattern_tuple!(() $($p)*,))));
+    (($($t:tt)*)) => (pattern_tuple!(() $($p)*,))
+}
+
+macro_rules! pattern_tuple {
+    ((pattern!($($e:tt)*))$(,)* ) => (pattern!($($e)*));
+    (($($v:tt)*), ) => (Pattern::Tuple(vec!($($v)*)));
+    (($($v:tt)*) $($x:ident):*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_tuple!(($($v)* pattern!($($x):*$(($($p)*))*)) $($rest)*));
+}
+
+macro_rules! pattern_id {
+    (+$($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*) => (PatternID::Var(type_id!($($t)*$([$($g)*])*$(($($p)*))*)));
+    ($a:ident) => (PatternID::Atom($a));
+    ($f:ident($($p:tt)*)) => (PatternID::Comp($f, Box::new(pattern_id_tuple!(() $($p)*,))));
+    (($($t:tt)*)) => (pattern_id_tuple!(() $($p)*,))
+}
+
+macro_rules! pattern_id_tuple {
+    ((pattern_id!($($e:tt)*))$(,)* ) => (pattern_id!($($e)*));
+    (($($v:tt)*), ) => (PatternID::Tuple(vec!($($v)*)));
+    (($($v:tt)*) +$x:ident, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!(+$x)) $($rest)*));
+    (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!($($x)*$(($($p)*))*)) $($rest)*));
+}
+
 macro_rules! element {
     (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec!()));
     (struct $n:ident($($v:tt)*)) => (Element::Struct(stringify!($n).to_owned(), ttype_vec!(() $($v)*,)));

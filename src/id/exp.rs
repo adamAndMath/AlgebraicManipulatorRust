@@ -8,7 +8,7 @@ use envs::{ ExpVal, LocalEnvs };
 pub enum Exp {
     Var(LocalID<ExpVal>),
     Tuple(Vec<Exp>),
-    Lambda(Vec<Type>, Box<Exp>),
+    Lambda(Pattern, Box<Exp>),
     Call(Box<Exp>, Box<Exp>),
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
@@ -18,14 +18,9 @@ impl Exp {
         Some(match self {
             Exp::Var(x) => env.exp.get(*x)?.ty(),
             Exp::Tuple(v) => Type::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Option<_>>()?),
-            Exp::Lambda(xs, e) => {
-                let p = if let [ref x] = xs[..] {
-                    x.clone()
-                } else {
-                    Type::Tuple(xs.clone())
-                };
-                let b = e.type_check(&env.scope_anon(xs.clone().into_iter().map(ExpVal::new_empty).collect()))?;
-                Type::Gen(FN_ID.into(), vec![(Contravariant, p), (Covariant, b)])
+            Exp::Lambda(p, e) => {
+                let b = e.type_check(&env.scope_anon(p.bound()))?;
+                Type::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(env)?), (Covariant, b)])
             },
             Exp::Call(f, e) => {
                 let f = f.type_check(env)?;
