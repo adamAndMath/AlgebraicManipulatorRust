@@ -1,7 +1,7 @@
 use predef::*;
 use env::LocalID;
 use envs::{ LocalEnvs, ExpVal };
-use ast::Type;
+use super::Type;
 use id::renamed::{ TypeID, PatternID };
 use variance::Variance::*;
 

@@ -14,7 +14,7 @@ impl Type {
                 let id = env.ty.get_id(t)?;
                 let ty = env.ty.get(id)?;
                 if ty.gen().len() != gs.len() {
-                    panic!("Generic parameter mismatch");
+                    panic!("Generic parameter mismatch at {:?}. Expected {}, but recieved {}", self, ty.gen().len(), gs.len());
                 }
                 TypeID::Gen(id, ty.gen().into_iter().zip(gs).map(|(v,t)|Some((*v,t.to_id(env)?))).collect::<Option<_>>()?)
             },

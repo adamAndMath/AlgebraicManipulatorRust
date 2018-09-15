@@ -27,7 +27,7 @@ macro_rules! type_id_gen {
 }
 
 macro_rules! type_id_tuple {
-    ((type_id!($($e:tt)*))$(,)* ) => (type_id!($($e)*));
+    ((type_id!($($e:tt)*), )$(,)* ) => (type_id!($($e)*));
     (($($v:tt)*)$(,)* ) => (TypeID::Tuple(vec!($($v)*)));
     (($($v:tt)*) $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) =>
         (type_id_tuple!(($($v)* type_id!($($t)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
@@ -40,7 +40,7 @@ macro_rules! exp {
 }
 
 macro_rules! exp_tuple {
-    ((exp!($($e:tt)*))$(,)* ) => (exp!($($e)*));
+    ((exp!($($e:tt)*), )$(,)* ) => (exp!($($e)*));
     (($($v:tt)*)$(,)* ) => (Exp::Tuple(vec!($($v)*)));
     (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (exp_tuple!(($($v)* exp!($($x)*$(($($p)*))*)) $($rest)*));
 }
@@ -65,9 +65,9 @@ macro_rules! pattern {
 }
 
 macro_rules! pattern_tuple {
-    ((pattern!($($e:tt)*))$(,)* ) => (pattern!($($e)*));
-    (($($v:tt)*), ) => (Pattern::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($x:ident):*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_tuple!(($($v)* pattern!($($x):*$(($($p)*))*)) $($rest)*));
+    ((pattern!($($e:tt)*), )$(,)* ) => (pattern!($($e)*));
+    (($($v:tt)*)$(,)* ) => (Pattern::Tuple(vec!($($v)*)));
+    (($($v:tt)*) $($x:ident):*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_tuple!(($($v)* pattern!($($x):*$(($($p)*))*), ) $($rest)*));
 }
 
 macro_rules! pattern_id {
@@ -78,10 +78,10 @@ macro_rules! pattern_id {
 }
 
 macro_rules! pattern_id_tuple {
-    ((pattern_id!($($e:tt)*))$(,)* ) => (pattern_id!($($e)*));
+    ((pattern_id!($($e:tt)*), )$(,)* ) => (pattern_id!($($e)*));
     (($($v:tt)*), ) => (PatternID::Tuple(vec!($($v)*)));
-    (($($v:tt)*) +$x:ident, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!(+$x)) $($rest)*));
-    (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!($($x)*$(($($p)*))*)) $($rest)*));
+    (($($v:tt)*) +$x:ident, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!(+$x), ) $($rest)*));
+    (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!($($x)*$(($($p)*))*), ) $($rest)*));
 }
 
 macro_rules! element {

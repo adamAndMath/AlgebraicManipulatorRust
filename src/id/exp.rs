@@ -32,7 +32,18 @@ impl Exp {
                 
                 b
             },
-            Exp::Match(_, ps) => Type::Tuple(ps.into_iter().map(|(p,e)|e.type_check(&env.scope_anon(p.bound()))).collect::<Option<_>>()?),
+            Exp::Match(_, ps) => {
+                let mut op: Option<Type> = None;
+                for (p, e) in ps {
+                    let t = e.type_check(&env.scope_anon(p.bound()))?;
+                    if let Some(ref ty) = op {
+                        if ty != &t { return None }
+                    } else {
+                        op = Some(t)
+                    }
+                }
+                op?
+            },
         })
     }
 }
