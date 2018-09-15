@@ -57,7 +57,8 @@ macro_rules! exp_match {
 macro_rules! exp_tuple {
     ((exp!($($e:tt)*), )$(,)* ) => (exp!($($e)*));
     (($($v:tt)*)$(,)* ) => (Exp::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) => (exp_tuple!(($($v)* exp!($($x)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
+    (($($v:tt)*) $($($x:ident):*$([$($g:tt)*])*$(($($p:tt)*))*)->*, $($rest:tt)*) =>
+        (exp_tuple!(($($v)* exp!($($($x)*$([$($g)*])*$(($($p)*))*)->*), ) $($rest)*));
 }
 
 macro_rules! exp_id {
@@ -145,4 +146,24 @@ macro_rules! enum_variants {
     (($($v:tt)*)$(,)* ) => (vec!($($v)*));
     (($($v:tt)*) $n:ident, $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), vec!()),) $($rest)*));
     (($($v:tt)*) $n:ident($($t:tt)*), $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), ttype_vec!(() $($t)*,)),) $($rest)*));
+}
+
+macro_rules! script {
+    ($env:ident, ) => ();
+    ($env:ident, struct $n:ident$([$($g:tt)*])*$(($($p:tt)*))*; $($rest:tt)*) => {
+        element!(struct $n$([$($g)*])*$(($($p)*))*).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
+    ($env:ident, enum $n:ident$([$($g:tt)*])*{$($v:tt)*} $($rest:tt)*) => {
+        element!(enum $n$([$($g)*])*{$($v)*}).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
+    ($env:ident, let $n:ident$([$($g:tt)*])*$(: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
+        element!(let $n$([$($g)*])*$(: $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
+    ($env:ident, fn $n:ident$([$($g:tt)*])*($($p:tt)*)$(-> $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
+        element!(fn $n$([$($g)*])*($($p)*)$(-> $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
 }

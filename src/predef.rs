@@ -39,6 +39,15 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>) {
     )
 }
 
+pub fn alias_predef(env: &mut Envs) {
+    env.exp.alias("true".to_owned(), TRUE_ID);
+    env.exp.alias("false".to_owned(), FALSE_ID);
+    env.exp.alias("exists".to_owned(), EXISTS_ID);
+    env.exp.alias("forall".to_owned(), FORALL_ID);
+
+    env.ty.alias("Bool".to_owned(), BOOL_ID);
+}
+
 pub fn get_fn_types(ty: Type) -> Option<(Type, Type)> {
     match ty {
         Type::Gen(f, v) => {

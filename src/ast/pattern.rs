@@ -1,9 +1,7 @@
 use predef::*;
-use env::LocalID;
-use envs::{ LocalEnvs, ExpVal };
+use envs::LocalEnvs;
 use super::Type;
 use id::renamed::{ TypeID, PatternID };
-use variance::Variance::*;
 
 #[derive(Debug)]
 pub enum Pattern {
