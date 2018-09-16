@@ -101,6 +101,12 @@ macro_rules! pattern_id_tuple {
     (($($v:tt)*) $($x:ident)*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_id_tuple!(($($v)* pattern_id!($($x)*$(($($p)*))*), ) $($rest)*));
 }
 
+macro_rules! tree {
+    ($f:tt$(,$t:tt)+) => (tree!($f)$(+tree!($t))*);
+    ([$($f:tt),+$(|$($t:tt),+)*]) => (tree!($($f),+)$(*tree!($($t),+))*);
+    ($f:tt) => (Tree::edge($f));
+}
+
 macro_rules! element {
     (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec![], vec![]));
     (struct $n:ident[$(g:tt)*]) =>

@@ -4,6 +4,7 @@ mod ast;
 mod id;
 mod predef;
 mod variance;
+mod tree;
 
 #[macro_use]
 mod macros;
