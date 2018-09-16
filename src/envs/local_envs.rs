@@ -1,11 +1,12 @@
 use env::LocalEnv;
-use super::{ ExpVal, TypeVal };
+use super::{ ExpVal, TypeVal, TruthVal };
 use id::{ Type, Exp };
 
 #[derive(Debug)]
 pub struct LocalEnvs<'a> {
     pub exp: LocalEnv<'a, ExpVal>,
     pub ty: LocalEnv<'a, TypeVal>,
+    pub truth: LocalEnv<'a, TruthVal>,
 }
 
 impl<'a> LocalEnvs<'a> {
@@ -13,6 +14,7 @@ impl<'a> LocalEnvs<'a> {
         LocalEnvs {
             exp: self.exp.scope(v),
             ty: self.ty.scope(vec![]),
+            truth: self.truth.scope(vec![]),
         }
     }
 
@@ -20,6 +22,7 @@ impl<'a> LocalEnvs<'a> {
         LocalEnvs {
             exp: self.exp.scope(vec![]),
             ty: self.ty.scope(v),
+            truth: self.truth.scope(vec![]),
         }
     }
     
@@ -27,6 +30,7 @@ impl<'a> LocalEnvs<'a> {
         LocalEnvs {
             exp: self.exp.scope_anon(v),
             ty: self.ty.scope_anon(vec![]),
+            truth: self.truth.scope(vec![]),
         }
     }
     
@@ -34,6 +38,7 @@ impl<'a> LocalEnvs<'a> {
         LocalEnvs {
             exp: self.exp.scope_anon(vec![]),
             ty: self.ty.scope_anon(v),
+            truth: self.truth.scope(vec![]),
         }
     }
 }

@@ -12,7 +12,7 @@ pub const FORALL_ID: ID<ExpVal> = ID(3, PhantomData);
 pub const BOOL_ID: ID<TypeVal> = ID(0, PhantomData);
 pub const FN_ID: ID<TypeVal> = ID(1, PhantomData);
 
-pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>) {
+pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>, Vec<TruthVal>) {
     let mut bool_ty = TypeVal::new(vec![]);
     bool_ty.push_atom(ID::new(0));
     bool_ty.push_atom(ID::new(1));
@@ -35,6 +35,9 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>) {
         vec![
             bool_ty,
             TypeVal::new(vec![Contravariant, Covariant]),
+        ],
+        vec![
+
         ],
     )
 }

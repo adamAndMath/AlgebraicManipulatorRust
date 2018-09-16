@@ -19,8 +19,8 @@ fn main() {
     use tree::Tree;
     use ast::*;
 
-    let (mut exps, mut tys) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys);
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     alias_predef(&mut env);
 
     script! {env,

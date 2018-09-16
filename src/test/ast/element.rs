@@ -6,10 +6,10 @@ use ast::{ Type, Pattern, Exp, Element};
 
 #[test]
 fn struct_empty() {
-    let (mut exps, mut tys) = predef();
-    let lens = (exps.len(), tys.len());
+    let (mut exps, mut tys, mut truths) = predef();
+    let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys);
+        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
         element!(struct Test).define(&mut env).unwrap();
 
         let e_id = env.exp.get_id("Test").unwrap();
@@ -21,15 +21,15 @@ fn struct_empty() {
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
-    assert_eq!((exps.len(), tys.len()), (lens.0+1, lens.1+1));
+    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+1, lens.1+1, lens.2));
 }
 
 #[test]
 fn struct_tuple() {
-    let (mut exps, mut tys) = predef();
-    let lens = (exps.len(), tys.len());
+    let (mut exps, mut tys, mut truths) = predef();
+    let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys);
+        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
         env.ty.alias("fn".to_owned(), FN_ID);
         element!(struct A).define(&mut env).unwrap();
         element!(struct B).define(&mut env).unwrap();
@@ -44,15 +44,15 @@ fn struct_tuple() {
         assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
     }
 
-    assert_eq!((exps.len(), tys.len()), (lens.0+3, lens.1+3));
+    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+3, lens.2));
 }
 
 #[test]
 fn letting() {
-    let (mut exps, mut tys) = predef();
-    let lens = (exps.len(), tys.len());
+    let (mut exps, mut tys, mut truths) = predef();
+    let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys);
+        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).unwrap();
         element!(let two = Succ(Succ(Zero))).define(&mut env).unwrap();
         element!(let two_marked: Nat = Succ(Succ(Zero))).define(&mut env).unwrap();
@@ -60,15 +60,15 @@ fn letting() {
         assert_eq!(env.exp.get_id("two").and_then(|id|env.exp.get(id)), env.exp.get_id("two_marked").and_then(|id|env.exp.get(id)));
     }
 
-    assert_eq!((exps.len(), tys.len()), (lens.0+4, lens.1+1));
+    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+4, lens.1+1, lens.2));
 }
 
 #[test]
 fn func() {
-    let (mut exps, mut tys) = predef();
-    let lens = (exps.len(), tys.len());
+    let (mut exps, mut tys, mut truths) = predef();
+    let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys);
+        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
         env.ty.alias("fn".to_owned(), FN_ID);
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
         element!(
@@ -92,13 +92,13 @@ fn func() {
         assert_eq!(add.ty(), ttype!(fn[(Nat, Nat), Nat]).to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
     }
     
-    assert_eq!((exps.len(), tys.len()), (lens.0+3, lens.1+1));
+    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+1, lens.2));
 }
 
 #[test]
 fn lists() {
-    let (mut exps, mut tys) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys);
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     
     element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
     element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();

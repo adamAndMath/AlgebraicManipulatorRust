@@ -5,8 +5,8 @@ use id::renamed::{ TypeID, ExpID };
 
 #[test]
 fn type_check() {
-    let (mut exps, mut tys) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys);
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
 
     let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
     let zero_id = env.exp.add("Zero".to_owned(), ExpVal::new_empty(type_id!(nat_id), 0));

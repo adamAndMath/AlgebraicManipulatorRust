@@ -5,8 +5,8 @@ use ast::{ Type, Exp };
 
 #[test]
 fn succ_zero() {
-    let (mut exps, mut tys) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys);
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     env.ty.alias("fn".to_owned(), FN_ID);
 
     let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
