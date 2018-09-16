@@ -54,6 +54,12 @@ macro_rules! exp_match {
         (vec![$((pattern!($($px)*$(($($pp)*))*), exp!($($ex)*$([$($eg)*])*$(($($ep)*))*))),*]);
 }
 
+macro_rules! exp_vec {
+    () => (vec![]);
+    ($($($($x:ident):*$([$($g:tt)*])*$(($($p:tt)*))*)->*),*) =>
+        (vec![$(exp!($($($x):*$([$($g)*])*$(($($p)*))*)->+)),*]);
+}
+
 macro_rules! exp_tuple {
     ((exp!($($e:tt)*), )$(,)* ) => (exp!($($e)*));
     (($($v:tt)*)$(,)* ) => (Exp::Tuple(vec!($($v)*)));
@@ -107,6 +113,26 @@ macro_rules! tree {
     ($f:tt) => (Tree::edge($f));
 }
 
+macro_rules! proof {
+    (match $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))* {$($m:tt)*}) =>
+        (Proof::Match(exp!($($x)*$([$($g)*])*$(($($p)*))*), proof_match!($($m)*)));
+    ($n:ident($($p:tt)*)$(~$fn:ident($($fp:tt)*)$([$($ft:tt)*])*)*$(.$($tn:ident($($tp:tt)*)$([$($tt:tt)*])*)~*)*) =>
+        (Proof::Sequence(stringify!($n).to_owned(), vec![], exp_vec!($($p)*), proof_sequence!(() $(~$fn($($fp)*)$([$($ft)*])*)*$(.$($tn($($tp)*)$([$($tt)*])*)~*)*)));
+}
+
+macro_rules! proof_match {
+    ($($($px:ident):*$([$($pg:tt)*])*$(($($pp:tt)*))* => $($($an:ident($($ap:tt)*)$([$($at:tt)*])*)~*).*$({$($b:tt)*})*),*) =>
+        (vec![$((pattern!($($px):*$([$($pg)*])*$(($($pp)*))*), proof!($($($an($($ap)*)$([$($at)*])*)~*).*$({$($b)*})*))),*]);
+}
+
+macro_rules! proof_sequence {
+    (($($v:tt)*)) => (vec![$($v)*]);
+    (($($v:tt)*) .$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
+        (proof_sequence!(($($v)* (Direction::Forwards, stringify!($n).to_owned(), vec![], exp_vec!($($p)*), tree!([$($t)*])), ) $($rest)*));
+    (($($v:tt)*) ~$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
+        (proof_sequence!(($($v)* (Direction::Backwards, stringify!($n).to_owned(), vec![], exp_vec!($($p)*), tree!([$($t)*])), ) $($rest)*));
+}
+
 macro_rules! element {
     (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec![], vec![]));
     (struct $n:ident[$(g:tt)*]) =>
@@ -133,8 +159,16 @@ macro_rules! element {
         (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), None, exp!($($rest)*)));
     (fn $n:ident($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
         (Element::Func(stringify!($n).to_owned(), vec![], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
-    (fn $n:ident[$($g:tt)*]($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
+    (fn $n:ident[$($g:ident),*]($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
         (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
+    (proof $n:ident{ $($proof:tt)* }) =>
+        (Element::Proof(stringify!($n).to_owned(), vec![], vec![], proof!($($proof)*)));
+    (proof $n:ident[$($g:ident),*]{ $($proof:tt)* }) =>
+        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], vec![], proof!($($proof)*)));
+    (proof $n:ident($($p:tt)*){ $($proof:tt)* }) =>
+        (Element::Proof(stringify!($n).to_owned(), vec![], element_par!($($p)*), proof!($($proof)*)));
+    (proof $n:ident[$($g:ident),*]($($p:tt)*){ $($proof:tt)* }) =>
+        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), proof!($($proof)*)));
 }
 
 macro_rules! element_gen {
@@ -170,6 +204,10 @@ macro_rules! script {
     };
     ($env:ident, fn $n:ident$([$($g:tt)*])*($($p:tt)*)$(-> $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
         element!(fn $n$([$($g)*])*($($p)*)$(-> $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
+    ($env:ident, proof $n:ident$([$($g:tt)*])*$(($($p:tt)*))*{$($proof:tt)*} $($rest:tt)*) => {
+        element!(proof $n$([$($g)*])*$(($($p)*))*{$($proof)*}).define(&mut $env).unwrap();
         script!($env, $($rest)*);
     };
 }

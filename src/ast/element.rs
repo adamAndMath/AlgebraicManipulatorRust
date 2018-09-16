@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp };
+use super::{ Type, Exp, Proof };
 use variance::Variance::{ self, * };
 use id::renamed::{ TypeID, PatternID, ExpID };
 
@@ -10,6 +10,7 @@ pub enum Element {
     Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
     Func(String, Vec<String>, Vec<(String, Type)>, Option<Type>, Exp),
+    Proof(String, Vec<String>, Vec<(String, Type)>, Proof),
 }
 
 impl Element {
@@ -75,7 +76,7 @@ impl Element {
                 };
 
                 env.exp.add(n.clone(), f);
-            }
+            },
             Element::Func(n, gs, ps, Some(re), e) => {
                 let gs: Vec<_> = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
                 let (re, p, t) = {
@@ -100,6 +101,9 @@ impl Element {
                 };
 
                 env.exp.get_mut(id).unwrap().set_val(f);
+            },
+            Element::Proof(n, gs, ps, proof) => {
+                unimplemented!();
             }
         }
 

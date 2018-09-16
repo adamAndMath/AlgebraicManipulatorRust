@@ -16,6 +16,7 @@ fn main() {
     use predef::*;
     use envs::Envs;
     use variance::Variance;
+    use tree::Tree;
     use ast::*;
 
     let (mut exps, mut tys) = predef();
@@ -27,6 +28,13 @@ fn main() {
             true => false,
             false => true
         });
+
+        proof DoubleNegative(b: Bool) {
+            match b {
+                true => ID(not(not(true)))~wrap()[1,0]~wrap()[1].wrap(b)[0,0,0|1],
+                false => ID(not(not(false)))~wrap()[1,0]~wrap()[1].wrap(b)[0,0,0|1]
+            }
+        }
 
         fn and(a: Bool, b: Bool) = match((a, b), {
             (true, true) => true,
@@ -41,6 +49,50 @@ fn main() {
             (false, true) => true,
             (false, false) => false
         });
+
+        proof And_Commutative(a: Bool, b: Bool) {
+            match (a, b) {
+                (true, true) => ID(and(true, true)).wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
+                (true, false) => ID(and(true, false))~wrap()[1].wrap(and(false, true))[1].wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
+                (false, true) => ID(and(false, true))~wrap()[1].wrap(and(true, false))[1].wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
+                (false, false) => ID(and(false, false)).wrap(a)[0,0|1,1].wrap(b)[0,1|1,0]
+            }
+        }
+
+        proof And_NeutralElement_Left(b: Bool) {
+            match b {
+                true => ID(and(true, true))~wrap()[1].wrap(b)[0,1|1],
+                false => ID(and(true, false))~wrap()[1].wrap(b)[0,1|1]
+            }
+        }
+
+        proof And_NeutralElement_Right(b: Bool) {
+            ID(and(b, true)).And_Commutative(b, true)[1].And_NeutralElement_Left(b)[1]
+        }
+
+        proof And_AbsorbativeElement_Left(b: Bool) {
+            match b {
+                true => ID(and(false, b))~wrap()[1,1]~wrap()[1],
+                false => ID(and(false, b))~wrap()[1,1]~wrap()[1]
+            }
+        }
+
+        proof And_AbsorbativeElement_Right(b: Bool) {
+            ID(and(b, false)).And_Commutative(b, false)[1].And_AbsorbativeElement_Left(b)[1]
+        }
+
+        proof And_Associative(a: Bool, b: Bool, c: Bool) {
+            match b {
+                true => ID(and(and(a, true), c))
+                            .And_NeutralElement_Right(a)[1,0]
+                            ~And_NeutralElement_Left(c)[1,1],
+                false => ID(and(and(a, false), c))
+                            .And_AbsorbativeElement_Right(a)[1,0]
+                            .And_NeutralElement_Left(c)[1]
+                            ~And_AbsorbativeElement_Right(a)[1]
+                            ~And_AbsorbativeElement_Left(c)[1,1]
+            }
+        }
 
         enum Nat {
             Zero,
