@@ -1,15 +1,36 @@
-use std::collections::BTreeMap;
-use std::fmt::{ self, Display, Formatter };
-use std::ops::{ Add, Mul, AddAssign, MulAssign };
+mod index;
 
-#[derive(Debug, Clone, Default)]
+pub use self::index::*;
+
+use std::collections::BTreeMap;
+use std::ops::{ Add, Mul, AddAssign, MulAssign, RangeBounds };
+use std::fmt::{ self, Display, Formatter };
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Tree {
-    map: BTreeMap<usize, Tree>,
+    map: BTreeMap<TreeIndex, Tree>,
 }
 
 impl Tree {
-    pub fn edge(n: usize) -> Self {
-        Tree { map: vec![(n, Tree::default())].into_iter().collect() }
+    pub fn edge<I: Into<TreeIndex>>(n: I) -> Self {
+        Tree { map: vec![(n.into(), Tree::default())].into_iter().collect() }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    pub fn get<I: Into<TreeIndex>>(&self, i: I) -> Option<&Self> {
+        self.map.get(&i.into())
+    }
+
+    pub fn is_within<R: RangeBounds<usize>>(&self, range: R, chars: &[TreeChar]) -> bool {
+        self.map.keys().all(|k|
+            match k {
+                TreeIndex::Char(c) => chars.contains(c),
+                TreeIndex::Index(i) => range.contains(i),
+            }
+        )
     }
 }
 
