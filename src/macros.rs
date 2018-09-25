@@ -75,8 +75,8 @@ macro_rules! exp_id {
 }
 
 macro_rules! exp_id_tuple {
-    ((exp_id!($($e:tt)*), )$(,)* ) => (exp_id!($($e)*));
-    (($($v:tt)*), ) => (ExpID::Tuple(vec!($($v)*)));
+    ((exp_id!($($e:tt)*)$(,)* )$(,)* ) => (exp_id!($($e)*));
+    (($($v:tt)*)$(,)* ) => (ExpID::Tuple(vec!($($v)*)));
     (($($v:tt)*) $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, $($rest:tt)*) => (exp_id_tuple!(($($v)* exp_id!($($x)*$([$($g)*])*$(($($p)*))*), ) $($rest)*));
 }
 

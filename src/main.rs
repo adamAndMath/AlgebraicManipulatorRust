@@ -1,3 +1,5 @@
+#![feature(range_contains)]
+
 mod env;
 mod envs;
 mod ast;

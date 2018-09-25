@@ -1,7 +1,9 @@
 use predef::*;
 use envs::*;
+use env::LocalID;
 use id::renamed::ExpID;
-use ast::{ Type, Exp };
+use ast::{ Type, Pattern, Exp };
+use tree::*;
 
 #[test]
 fn succ_zero() {
@@ -22,4 +24,30 @@ fn succ_zero() {
     let exp = exp!(Succ(Zero));
 
     assert_eq!(exp.to_id(&env.local()), Some(exp_id!(succ_id(zero_id))));
+}
+
+#[test]
+fn apply() {
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    alias_predef(&mut env);
+    let e = exp!(forall((x: Bool) -> exists((y: Bool) -> eq(x, y)))).to_id(&mut env.local()).unwrap();
+    let x = LocalID::new(1);
+    let y = LocalID::new(0);
+    macro_rules! test_apply {
+        ($env:ident, $e:ident[$($t:tt)*]{$($r:tt)*} = $($rest:tt)*) =>
+            (assert_eq!($e.apply(&tree!([$($t)*]), 0, &|_,_|Some(exp_id!($($r)*))), exp!($($rest)*).to_id(&env.local()), stringify!([$($t)*])));
+    }
+    test_apply!(env, e[] {TRUE_ID} = true);
+    test_apply!(env, e[f] {EXISTS_ID} = exists((x: Bool) -> exists((y: Bool) -> eq(x, y))));
+    test_apply!(env, e[t] {TRUE_ID} = forall(true));
+    test_apply!(env, e[0] {TRUE_ID} = forall(true));
+    test_apply!(env, e[0,0] {TRUE_ID} = forall((x: Bool) -> true));
+    test_apply!(env, e[0,0,f] {FORALL_ID} = forall((x: Bool) -> forall((y: Bool) -> eq(x, y))));
+    test_apply!(env, e[0,0,t] {TRUE_ID} = forall((x: Bool) -> exists(true)));
+    test_apply!(env, e[0,0,0] {TRUE_ID} = forall((x: Bool) -> exists(true)));
+    test_apply!(env, e[0,0,0,0] {TRUE_ID} = forall((x: Bool) -> exists((y: Bool) -> true)));
+    test_apply!(env, e[0,0,0,0,t] {(y,x)} = forall((x: Bool) -> exists((y: Bool) -> eq(y, x))));
+    test_apply!(env, e[0,0,0,0,0] {y} = forall((x: Bool) -> exists((y: Bool) -> eq(y, y))));
+    test_apply!(env, e[0,0,0,0,1] {x} = forall((x: Bool) -> exists((y: Bool) -> eq(x, x))));
 }
