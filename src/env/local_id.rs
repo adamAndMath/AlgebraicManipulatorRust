@@ -52,6 +52,16 @@ impl<T: ?Sized> PartialEq for LocalID<T> {
     }
 }
 
+impl<T: ?Sized> PartialEq<ID<T>> for LocalID<T> {
+    fn eq(&self, rhs: &ID<T>) -> bool {
+        match self {
+            LocalID::Global(lhs) => lhs == rhs,
+            LocalID::Local(_, _) => false,
+            _ => false,
+        }
+    }
+}
+
 impl<T: ?Sized> Eq for LocalID<T> {}
 
 impl<T: ?Sized> Copy for LocalID<T> {}
