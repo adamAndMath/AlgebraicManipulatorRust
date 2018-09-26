@@ -45,8 +45,13 @@ macro_rules! exp {
     (match($($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, {$($m:tt)*})) =>
         (Exp::Match(Box::new(exp!($($x)*$([$($g)*])*$(($($p)*))*)), exp_match!($($m)*)));
     ($($x:ident):*$(($($p:tt)*))* -> $($rest:tt)*) => (Exp::Lambda(pattern!($($x):*$(($($p)*))*), Box::new(exp!($($rest)*))));
-    ($x:ident$([$($g:tt)*])*($($p:tt)*)) => (Exp::Call(Box::new(exp!($x$([$($g)*])*)), Box::new(exp_tuple!(() $($p)*,))));
-    (($($p:tt)*)) => (exp_tuple!(() $($p)*,));
+    ($x:ident$([$($g:tt)*])*$(($($p:tt)*))+) => (exp_call!((exp!($x$([$($g)*])*)), $(($($p)*))+));
+    (($($t:tt)*)$(($($p:tt)*))*) => (exp_call!((exp_tuple!(() $($t)*,)), $(($($p)*))*));
+}
+
+macro_rules! exp_call {
+    (($($current:tt)*), ) => ($($current)*);
+    (($($current:tt)*), ($($p:tt)*)$($rest:tt)*) => (exp_call!((Exp::Call(Box::new($($current)*), Box::new(exp_tuple!(() $($p)*,)))), $($rest)*));
 }
 
 macro_rules! exp_match {
