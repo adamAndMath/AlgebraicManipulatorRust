@@ -64,7 +64,7 @@ pub fn alias_predef(env: &mut Envs) {
 pub fn get_fn_types(ty: Type) -> Option<(Type, Type)> {
     match ty {
         Type::Gen(f, v) => {
-            if f != FN_ID.into() { return None }
+            if f != FN_ID { return None }
             match v[..] {
                 [(Contravariant, ref p), (Covariant, ref b)] => Some((p.clone(), b.clone())),
                 _ => None,
