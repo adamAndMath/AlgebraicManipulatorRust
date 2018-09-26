@@ -48,6 +48,12 @@ impl TruthRef {
                             match e {
                                 ExpID::Var(id, _) => env.exp.get(*id)?.val().map(|e|e.push_local(i)),
                                 ExpID::Call(box ExpID::Lambda(p, f), box arg) => p.match_exp(arg.clone(), env).map(|v|f.set(&v)),
+                                ExpID::Call(box ExpID::Var(id, gs), box arg) => {
+                                    match env.exp.get(*id)?.val()? {
+                                        ExpID::Lambda(p, f) => p.match_exp(arg.clone(), env).map(|v|f.set(&v)),
+                                        _ => unimplemented!(),
+                                    }
+                                },
                                 ExpID::Match(box e, v) => v.into_iter().filter_map(|(p,a)|{let v = p.match_exp(e.clone(), env)?; Some(a.set(&v))}).next(),
                                 _ => unimplemented!(),
                             }
