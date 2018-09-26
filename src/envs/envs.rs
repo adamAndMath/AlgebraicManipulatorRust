@@ -17,6 +17,14 @@ impl<'a> Envs<'a> {
         }
     }
 
+    pub fn scope<'b>(&'b mut self) -> Envs<'b> where 'b: 'a {
+        Envs {
+            exp: self.exp.scope(),
+            ty: self.ty.scope(),
+            truth: self.truth.scope(),
+        }
+    }
+
     pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {
         LocalEnvs {
             exp: LocalEnv::new(&self.exp),
