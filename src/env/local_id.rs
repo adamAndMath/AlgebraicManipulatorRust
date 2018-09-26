@@ -57,7 +57,6 @@ impl<T: ?Sized> PartialEq<ID<T>> for LocalID<T> {
         match self {
             LocalID::Global(lhs) => lhs == rhs,
             LocalID::Local(_, _) => false,
-            _ => false,
         }
     }
 }
