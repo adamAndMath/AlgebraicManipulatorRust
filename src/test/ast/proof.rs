@@ -77,3 +77,16 @@ fn unwraping_match() {
     let re = p.execute(&env.local());
     assert_eq!(re, Some(exp_id!(FALSE_ID)));
 }
+
+#[test]
+fn unwraping_lambda_call() {
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    alias_predef(&mut env);
+    let e = exp!(((a: Bool, b: Bool) -> b)(true, false));
+    let e_id = e.to_id(&env.local()).unwrap();
+    env.truth.add("m".to_owned(), TruthVal::new(e_id));
+    let p = proof!(m()~wrap(((a: Bool, b: Bool) -> b)(true, false))[]);
+    let re = p.execute(&env.local());
+    assert_eq!(re, Some(exp_id!(FALSE_ID)));
+}
