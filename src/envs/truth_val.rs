@@ -15,13 +15,9 @@ impl TruthVal {
         let mut e = self.e.clone();
         let par = &par[..];
         if !par.is_empty() {
-            e = if let Exp::Call(f, a) = &e {
-                if let Exp::Var(f, _) = &**f {
-                    if *f != FORALL_ID { return None; }
-                } else { return None; }
-                if let Exp::Lambda(p, b) = &**a {
-                    (&**b).set(par)
-                } else { return None; }
+            e = if let Exp::Call(box Exp::Var(f, _), box Exp::Lambda(p, box b)) = &e {
+                if *f != FORALL_ID { return None; }
+                b.set(par)
             } else { return None; }
         }
         Some(e)

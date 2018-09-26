@@ -118,7 +118,7 @@ impl Exp {
                         }
                     ))
                 },
-                Exp::Call(e1, e2) => {
+                Exp::Call(e1, box e2) => {
                     Exp::Call(
                         match path.get(TreeChar::Func) {
                             Some(p) => Box::new(e1.apply(p, i, f)?),
@@ -127,10 +127,10 @@ impl Exp {
                         Box::new(if path.is_within(0..0, &[TreeChar::Func, TreeChar::Tuple]) {
                             match path.get(TreeChar::Tuple) {
                                 Some(p) => e2.apply(p, i, f)?,
-                                None => (&**e2).clone(),
+                                None => (e2).clone(),
                             }
                         } else {
-                            match &**e2 {
+                            match e2 {
                                 Exp::Tuple(v) => {
                                     if !path.is_within(0..v.len(), &[TreeChar::Func]) { return None; }
                                     Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
