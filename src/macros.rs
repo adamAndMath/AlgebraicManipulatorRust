@@ -116,11 +116,15 @@ macro_rules! tree {
     ($f:tt) => (Tree::edge($f));
 }
 
+macro_rules! truth_ref {
+    ($n:ident($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), vec![], exp_vec!($($p)*)));
+}
+
 macro_rules! proof {
     (match $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))* {$($m:tt)*}) =>
         (Proof::Match(exp!($($x)*$([$($g)*])*$(($($p)*))*), proof_match!($($m)*)));
     ($n:ident($($p:tt)*)$(~$fn:ident($($fp:tt)*)$([$($ft:tt)*])*)*$(.$($tn:ident($($tp:tt)*)$([$($tt:tt)*])*)~*)*) =>
-        (Proof::Sequence(stringify!($n).to_owned(), vec![], exp_vec!($($p)*), proof_sequence!(() $(~$fn($($fp)*)$([$($ft)*])*)*$(.$($tn($($tp)*)$([$($tt)*])*)~*)*)));
+        (Proof::Sequence(truth_ref!($n($($p)*)), proof_sequence!(() $(~$fn($($fp)*)$([$($ft)*])*)*$(.$($tn($($tp)*)$([$($tt)*])*)~*)*)));
 }
 
 macro_rules! proof_match {
@@ -131,9 +135,9 @@ macro_rules! proof_match {
 macro_rules! proof_sequence {
     (($($v:tt)*)) => (vec![$($v)*]);
     (($($v:tt)*) .$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
-        (proof_sequence!(($($v)* (Direction::Forwards, stringify!($n).to_owned(), vec![], exp_vec!($($p)*), tree!([$($t)*])), ) $($rest)*));
+        (proof_sequence!(($($v)* (Direction::Forwards, truth_ref!($n($($p)*)), tree!([$($t)*])), ) $($rest)*));
     (($($v:tt)*) ~$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
-        (proof_sequence!(($($v)* (Direction::Backwards, stringify!($n).to_owned(), vec![], exp_vec!($($p)*), tree!([$($t)*])), ) $($rest)*));
+        (proof_sequence!(($($v)* (Direction::Backwards, truth_ref!($n($($p)*)), tree!([$($t)*])), ) $($rest)*));
 }
 
 macro_rules! element {

@@ -1,7 +1,7 @@
 use predef::*;
 use env::ID;
 use envs::*;
-use super::Type;
+use super::{ Type, Exp };
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Pattern {
@@ -34,6 +34,33 @@ impl Pattern {
             Pattern::Atom(_) => vec!(),
             Pattern::Comp(_, p) => p.bound(),
             Pattern::Tuple(ps) => ps.into_iter().flat_map(|p|p.bound()).collect(),
+        }
+    }
+
+    pub fn match_exp(&self, e: Exp, env: &LocalEnvs) -> Option<Vec<Exp>> {
+        match &self {
+            Pattern::Var(ty) =>
+                if e.type_check(env)? == *ty {
+                    Some(vec![e])
+                } else {None},
+            Pattern::Atom(a) =>
+                if let Exp::Var(id, _) = e {
+                    if id == *a {
+                        Some(vec![])
+                    } else {None}
+                } else {None},
+            Pattern::Comp(c, box p) =>
+                if let Exp::Call(box Exp::Var(f, _), box e) = e {
+                    if f == *c {
+                        p.match_exp(e, env)
+                    } else {None}
+                } else {None},
+            Pattern::Tuple(ps) =>
+                if let Exp::Tuple(es) = e {
+                    if ps.len() == es.len() {
+                        ps.into_iter().zip(es).map(|(p, e)|p.match_exp(e, env)).fold(Some(vec![]), |v, r|{let mut v = v?; v.extend(r?); Some(v)})
+                    } else {None}
+                } else {None},
         }
     }
 }

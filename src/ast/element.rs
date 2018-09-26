@@ -103,7 +103,24 @@ impl Element {
                 env.exp.get_mut(id).unwrap().set_val(f);
             },
             Element::Proof(n, gs, ps, proof) => {
-                unimplemented!();
+                let proof = {
+                    let env = env.local();
+                    let gs = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
+                    let env = env.scope_ty(gs);
+                    let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Option<Vec<_>>>()?;
+                    let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
+                    let env = env.scope(ps);
+                    let proof = proof.execute(&env)?;
+                    if ts.len() == 0 {
+                        proof
+                    } else {
+                        let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
+                        let t = p.type_check(&env)?;
+                        ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Lambda(p, Box::new(proof))))
+                    }
+                };
+
+                env.truth.add(n.to_owned(), TruthVal::new(proof));
             }
         }
 

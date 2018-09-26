@@ -1,4 +1,4 @@
-#![feature(range_contains)]
+#![feature(range_contains, box_patterns)]
 
 mod env;
 mod envs;

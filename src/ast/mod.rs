@@ -8,5 +8,4 @@ pub use self::ty::Type;
 pub use self::exp::Exp;
 pub use self::pattern::Pattern;
 pub use self::element::Element;
-pub use self::proof::Proof;
-pub use self::proof::Direction;
+pub use self::proof::*;
