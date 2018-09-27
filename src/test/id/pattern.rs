@@ -16,8 +16,8 @@ fn type_check() {
 
     let env = env.local();
     
-    assert_eq!(pattern_id!(zero_id).type_check(&env), Some(type_id!(nat_id)));
-    assert_eq!(pattern_id!(+nat_id).type_check(&env), Some(type_id!(nat_id)));
-    assert_eq!(pattern_id!(succ_id(zero_id)).type_check(&env), Some(type_id!(nat_id)));
-    assert_eq!(pattern_id!(succ_id(+nat_id)).type_check(&env), Some(type_id!(nat_id)));
+    assert_eq!(pattern_id!(zero_id).type_check(&env), Ok(type_id!(nat_id)));
+    assert_eq!(pattern_id!(+nat_id).type_check(&env), Ok(type_id!(nat_id)));
+    assert_eq!(pattern_id!(succ_id(zero_id)).type_check(&env), Ok(type_id!(nat_id)));
+    assert_eq!(pattern_id!(succ_id(+nat_id)).type_check(&env), Ok(type_id!(nat_id)));
 }

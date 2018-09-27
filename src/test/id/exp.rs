@@ -18,5 +18,5 @@ fn type_check() {
 
     let exp = exp_id!(succ_id(zero_id));
 
-    assert_eq!(exp.type_check(&env), Some(type_id!(nat_id)));
+    assert_eq!(exp.type_check(&env), Ok(type_id!(nat_id)));
 }

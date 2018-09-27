@@ -23,7 +23,7 @@ fn succ_zero() {
 
     let exp = exp!(Succ(Zero));
 
-    assert_eq!(exp.to_id(&env.local()), Some(exp_id!(succ_id(zero_id))));
+    assert_eq!(exp.to_id(&env.local()), Ok(exp_id!(succ_id(zero_id))));
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn apply() {
     let y = LocalID::new(0);
     macro_rules! test_apply {
         ($env:ident, $e:ident[$($t:tt)*]{$($r:tt)*} = $($rest:tt)*) =>
-            (assert_eq!($e.apply(&tree!([$($t)*]), 0, &|_,_|Some(exp_id!($($r)*))), exp!($($rest)*).to_id(&env.local()), stringify!([$($t)*])));
+            (assert_eq!($e.apply(&tree!([$($t)*]), 0, &|_,_|Ok(exp_id!($($r)*))), exp!($($rest)*).to_id(&env.local()).map_err(Ok), stringify!([$($t)*])));
     }
     test_apply!(env, e[] {TRUE_ID} = true);
     test_apply!(env, e[f] {EXISTS_ID} = exists((x: Bool) -> exists((y: Bool) -> eq(x, y))));

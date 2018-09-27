@@ -1,6 +1,6 @@
 use id::{ Type, Exp };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpVal {
     val: Option<Exp>,
     gen: usize,

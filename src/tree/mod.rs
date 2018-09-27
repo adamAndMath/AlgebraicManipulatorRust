@@ -24,13 +24,21 @@ impl Tree {
         self.map.get(&i.into())
     }
 
-    pub fn is_within<R: RangeBounds<usize>>(&self, range: R, chars: &[TreeChar]) -> bool {
-        self.map.keys().all(|k|
-            match k {
-                TreeIndex::Char(c) => chars.contains(c),
-                TreeIndex::Index(i) => range.contains(i),
-            }
-        )
+    pub fn is_within<R: RangeBounds<usize>>(&self, range: R, chars: &[TreeChar]) -> Result<(), Tree> {
+        let outside = Tree {
+            map: self.map.keys().filter(|k|
+                match k {
+                    TreeIndex::Char(c) => !chars.contains(c),
+                    TreeIndex::Index(i) => !range.contains(i),
+                }
+            ).map(|k|(*k,Tree::default())).collect()
+        };
+
+        if outside.is_empty() {
+            Ok(())
+        } else {
+            Err(outside)
+        }
     }
 }
 

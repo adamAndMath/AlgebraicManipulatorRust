@@ -22,26 +22,27 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
         LocalEnv::Scope(self, HashMap::new(), v)
     }
 
-    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<LocalID<T>> where String: Borrow<S> {
+    pub fn get_id<S: ?Sized + Hash + Eq + AsRef<str>>(&self, name: &S) -> Result<LocalID<T>, String> where String: Borrow<S> {
         match self {
             LocalEnv::Base(env) => env.get_id(name).map(|id|id.into()),
             LocalEnv::Scope(env, m, v) =>
-                m.get(name).map(|id|LocalID::new(*id)).or_else(||
-                    env.get_id(name).map(|id|id.push_local(v.len()))
-                ),
+                match m.get(name).map(|id|LocalID::new(*id)) {
+                    Some(id) => Ok(id),
+                    None => env.get_id(name).map(|id|id.push_local(v.len())),
+                },
         }
     }
 
-    pub fn get<I: Into<LocalID<T>>>(&self, id: I) -> Option<&T> {
+    pub fn get<I: Into<LocalID<T>>>(&self, id: I) -> Result<&T, LocalID<T>> {
         match (self, id.into()) {
-            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id),
-            (LocalEnv::Base(_), LocalID::Local(_, _)) => None,
+            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id).map_err(|id|id.into()),
+            (LocalEnv::Base(_), LocalID::Local(id, p)) => Err(LocalID::Local(id, p)),
             (LocalEnv::Scope(env, _, _), LocalID::Global(id)) => env.get(LocalID::Global(id)),
             (LocalEnv::Scope(env, _, v), LocalID::Local(id, p)) =>
                 if v.len() > id {
-                    v.get(id)
+                    v.get(id).ok_or(LocalID::Local(id, p))
                 } else {
-                    env.get(LocalID::Local(id - v.len(), p))
+                    env.get(LocalID::Local(id - v.len(), p)).map_err(|id|id.push_local(v.len()))
                 },
         }
     }

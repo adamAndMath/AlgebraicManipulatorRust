@@ -26,15 +26,15 @@ impl<'a, T: 'a> Env<'a, T> {
         self.0.insert(name, id);
     }
 
-    pub fn get_id<S: ?Sized + Hash + Eq>(&self, name: &S) -> Option<ID<T>> where String: Borrow<S> {
-        self.0.get(name).cloned()
+    pub fn get_id<S: ?Sized + Hash + Eq + AsRef<str>>(&self, name: &S) -> Result<ID<T>, String> where String: Borrow<S> {
+        self.0.get(name).cloned().ok_or(name.as_ref().to_owned())
     }
 
-    pub fn get(&self, id: ID<T>) -> Option<&T> {
-        self.1.get(id.0)
+    pub fn get(&self, id: ID<T>) -> Result<&T, ID<T>> {
+        self.1.get(id.0).ok_or(id)
     }
 
-    pub fn get_mut(&mut self, id: ID<T>) -> Option<&mut T> {
-        self.1.get_mut(id.0)
+    pub fn get_mut(&mut self, id: ID<T>) -> Result<&mut T, ID<T>> {
+        self.1.get_mut(id.0).ok_or(id)
     }
 }

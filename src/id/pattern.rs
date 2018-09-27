@@ -1,9 +1,9 @@
 use predef::*;
 use env::{ ID, LocalID };
 use envs::*;
-use super::{ Type, Exp };
+use super::{ Type, Exp, ErrID };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pattern {
     Var(Type),
     Atom(ID<ExpVal>),
@@ -12,20 +12,20 @@ pub enum Pattern {
 }
 
 impl Pattern {
-    pub fn type_check(&self, env: &LocalEnvs) -> Option<Type> {
-        match self {
-            Pattern::Var(ty) => Some(ty.clone()),
-            Pattern::Atom(id) => env.exp.get(*id).map(|v|v.ty()),
+    pub fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+        Ok(match self {
+            Pattern::Var(ty) => ty.clone(),
+            Pattern::Atom(id) => env.exp.get(*id)?.ty(),
             Pattern::Comp(id, p) => {
                 let f = env.exp.get(*id)?;
                 let t = p.type_check(env)?;
 
                 let (p, b) = get_fn_types(f.ty())?;
-                if p != t { return None }
-                Some(b)
+                if t != p { return Err(ErrID::TypeMismatch(t, p)) }
+                b
             },
-            Pattern::Tuple(v) => Some(Type::Tuple(v.into_iter().map(|p|p.type_check(env)).collect::<Option<_>>()?)),
-        }
+            Pattern::Tuple(v) => Type::Tuple(v.into_iter().map(|p|p.type_check(env)).collect::<Result<_, ErrID>>()?),
+        })
     }
 
     pub fn to_exp(&self, i: usize) -> Exp {
@@ -49,30 +49,43 @@ impl Pattern {
         }
     }
 
-    pub fn match_exp(&self, e: Exp, env: &LocalEnvs) -> Option<Vec<Exp>> {
+    pub fn match_exp(&self, e: Exp, env: &LocalEnvs) -> Result<Vec<Exp>, ErrID> {
         match &self {
-            Pattern::Var(ty) =>
-                if e.type_check(env)? == *ty {
-                    Some(vec![e])
-                } else {None},
-            Pattern::Atom(a) =>
+            Pattern::Var(ty) => {
+                let e_ty = e.type_check(env)?;
+                if e_ty == *ty {
+                    Ok(vec![e])
+                } else {
+                    Err(ErrID::TypeMismatch(e_ty, ty.clone()))
+                }
+            },
+            Pattern::Atom(a) => {
                 if let Exp::Var(id, _) = e {
                     if id == *a {
-                        Some(vec![])
-                    } else {None}
-                } else {None},
-            Pattern::Comp(c, box p) =>
-                if let Exp::Call(box Exp::Var(f, _), box e) = e {
-                    if f == *c {
-                        p.match_exp(e, env)
-                    } else {None}
-                } else {None},
-            Pattern::Tuple(ps) =>
-                if let Exp::Tuple(es) = e {
+                        return Ok(vec![]);
+                    }
+                }
+
+                Err(ErrID::ExpMismatch(e, Exp::Var((*a).into(), vec![])))
+            }
+            Pattern::Comp(c, box p) => {
+                if let Exp::Call(box Exp::Var(f, _), box e) = &e {
+                    if *f == *c {
+                        return p.match_exp(e.clone(), env)
+                    }
+                }
+
+                Err(ErrID::ExpMismatch(e, Exp::Var((*c).into(), vec![])))
+            },
+            Pattern::Tuple(ps) => {
+                if let Exp::Tuple(es) = &e {
                     if ps.len() == es.len() {
-                        ps.into_iter().zip(es).map(|(p, e)|p.match_exp(e, env)).fold(Some(vec![]), |v, r|{let mut v = v?; v.extend(r?); Some(v)})
-                    } else {None}
-                } else {None},
+                        return ps.into_iter().zip(es).map(|(p, e)|p.match_exp(e.clone(), env)).fold(Ok(vec![]), |v, r|{let mut v = v?; v.extend(r?); Ok(v)});
+                    }
+                }
+
+                Err(ErrID::TypeMismatch(self.type_check(env)?, e.type_check(env)?))
+            },
         }
     }
 }

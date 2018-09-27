@@ -1,12 +1,12 @@
 use std::fmt::{ self, Display, Formatter };
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TreeChar {
     Func,
     Tuple,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TreeIndex {
     Char(TreeChar),
     Index(usize),

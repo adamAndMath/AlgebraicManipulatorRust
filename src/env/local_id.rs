@@ -12,10 +12,10 @@ impl<T: ?Sized> LocalID<T> {
         LocalID::Local(id, PhantomData)
     }
 
-    pub fn global(self) -> Option<ID<T>> {
+    pub fn global(self) -> Result<ID<T>, LocalID<T>> {
         match self {
-            LocalID::Global(id) => Some(id),
-            LocalID::Local(_, _) => None,
+            LocalID::Global(id) => Ok(id),
+            id => Err(id),
         }
     }
 

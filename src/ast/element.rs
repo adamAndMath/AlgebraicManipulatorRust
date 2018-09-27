@@ -1,9 +1,9 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp, Proof, MatchEnv };
+use super::{ Type, Exp, Proof, MatchEnv, ErrAst };
 use variance::Variance::{ self, * };
-use id::renamed::{ TypeID, PatternID, ExpID };
+use id::renamed::{ TypeID, PatternID, ExpID, ErrID };
 
 pub enum Element {
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
@@ -14,7 +14,7 @@ pub enum Element {
 }
 
 impl Element {
-    pub fn define(&self, env: &mut Envs) -> Option<()> {
+    pub fn define(&self, env: &mut Envs) -> Result<(), ErrAst> {
         match self {
             Element::Struct(n, gs, ps) => {
                 if ps.is_empty() {
@@ -55,8 +55,8 @@ impl Element {
                 };
                 if let Some(t) = an {
                     let t = t.to_id(&env.local())?;
-                    if t != e_ty {
-                        return None;
+                    if e_ty != t {
+                        return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, t)));
                     }
                 }
                 env.exp.add(n.clone(), ExpVal::new(e_id, e_ty, gs.len()));
@@ -65,7 +65,7 @@ impl Element {
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect());
-                    let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Option<Vec<_>>>()?;
+                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let ts = ps.iter().map(|(_,e)|PatternID::Var(e.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
                     let e_id = e.to_id(&env)?;
@@ -83,7 +83,7 @@ impl Element {
                     let env = env.local();
                     let env = env.scope_ty(gs.clone());
                     let re = re.to_id(&env)?;
-                    let ts = ps.iter().map(|(_,t)|Some(PatternID::Var(t.to_id(&env)?))).collect::<Option<Vec<_>>>()?;
+                    let ts = ps.iter().map(|(_,t)|Ok(PatternID::Var(t.to_id(&env)?))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
                     let t = TypeID::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(&env)?), (Covariant, re.clone())]);
                     (re, p, t)
@@ -92,11 +92,11 @@ impl Element {
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs);
-                    let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Option<Vec<_>>>()?;
+                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let env = env.scope(ps);
                     let e_id = e.to_id(&env)?;
                     let e_ty = e_id.type_check(&env)?;
-                    if re != e_ty { return None; }
+                    if e_ty != re { return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, re))); }
                     ExpID::Lambda(p, Box::new(e_id))
                 };
 
@@ -107,7 +107,7 @@ impl Element {
                     let env = env.local();
                     let gs = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
                     let env = env.scope_ty(gs);
-                    let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Option<Vec<_>>>()?;
+                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
                     let proof = proof.execute(&env, &MatchEnv::new())?;
@@ -124,6 +124,6 @@ impl Element {
             }
         }
 
-        Some(())
+        Ok(())
     }
 }

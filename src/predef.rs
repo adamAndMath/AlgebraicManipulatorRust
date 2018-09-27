@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use env::{ ID, LocalID };
 use envs::*;
 use variance::Variance::*;
-use id::Type;
+use id::{ Type, ErrID };
 
 pub const TRUE_ID: ID<ExpVal> = ID(0, PhantomData);
 pub const FALSE_ID: ID<ExpVal> = ID(1, PhantomData);
@@ -61,15 +61,14 @@ pub fn alias_predef(env: &mut Envs) {
     env.ty.alias("Bool".to_owned(), BOOL_ID);
 }
 
-pub fn get_fn_types(ty: Type) -> Option<(Type, Type)> {
-    match ty {
-        Type::Gen(f, v) => {
-            if f != FN_ID { return None }
-            match v[..] {
-                [(Contravariant, ref p), (Covariant, ref b)] => Some((p.clone(), b.clone())),
-                _ => None,
-            }
-        },
-        _ => None,
+pub fn get_fn_types(ty: Type) -> Result<(Type, Type), ErrID> {
+    if let Type::Gen(LocalID::Global(ID(1,_)), v) = ty {
+        if let [(Contravariant, ref p), (Covariant, ref b)] = v[..] {
+            Ok((p.clone(), b.clone()))
+        } else {
+            Err(ErrID::GenericAmount(FN_ID.into(), vec![Contravariant, Covariant]))
+        }
+    } else {
+        Err(ErrID::TypeMismatch(ty, Type::Gen(FN_ID.into(), vec![])))
     }
 }

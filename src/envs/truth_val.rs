@@ -1,7 +1,7 @@
 use predef::*;
 use id::{ Type, Exp };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TruthVal {
     e: Exp,
 }

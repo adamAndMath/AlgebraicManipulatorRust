@@ -1,11 +1,11 @@
 use predef::*;
 use env::LocalID;
 use variance::Variance::*;
-use super::{ Type, Pattern };
+use super::{ Type, Pattern, ErrID };
 use envs::{ ExpVal, LocalEnvs };
 use tree::{Tree, TreeChar };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Exp {
     Var(LocalID<ExpVal>, Vec<Type>),
     Tuple(Vec<Exp>),
@@ -15,10 +15,10 @@ pub enum Exp {
 }
 
 impl Exp {
-    pub fn type_check(&self, env: &LocalEnvs) -> Option<Type> {
-        Some(match self {
+    pub fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+        Ok(match self {
             Exp::Var(x, gs) => env.exp.get(*x)?.ty(),
-            Exp::Tuple(v) => Type::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Option<_>>()?),
+            Exp::Tuple(v) => Type::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Result<_,_>>()?),
             Exp::Lambda(p, e) => {
                 let b = e.type_check(&env.scope_anon(p.bound()))?;
                 Type::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(env)?), (Covariant, b)])
@@ -29,7 +29,7 @@ impl Exp {
                 
                 let (p, b) = get_fn_types(f)?;
 
-                if p != e { return None; }
+                if e != p { return Err(ErrID::TypeMismatch(e, p)); }
                 
                 b
             },
@@ -38,12 +38,12 @@ impl Exp {
                 for (p, e) in ps {
                     let t = e.type_check(&env.scope_anon(p.bound()))?;
                     if let Some(ref ty) = op {
-                        if ty != &t { return None }
+                        if t != *ty { return Err(ErrID::TypeMismatch(t, ty.clone())) }
                     } else {
                         op = Some(t)
                     }
                 }
-                op?
+                op.unwrap()
             },
         })
     }
@@ -92,28 +92,28 @@ impl Exp {
         }
     }
 
-    pub fn apply<F: Fn(&Self, usize) -> Option<Self>>(&self, path: &Tree, i: usize, f: &F) -> Option<Self> {
+    pub fn apply<E, F: Fn(&Self, usize) -> Result<Self, E>>(&self, path: &Tree, i: usize, f: &F) -> Result<Self, Result<E, Tree>> {
         if path.is_empty() {
-            f(self, i)
+            f(self, i).map_err(Ok)
         } else {
-            Some(match self {
-                Exp::Var(_, _) => return None,
+            Ok(match self {
+                Exp::Var(_, _) => return Err(Err(path.clone())),
                 Exp::Tuple(v) => {
-                    if !path.is_within(0..v.len(), &[]) { return None; }
+                    path.is_within(0..v.len(), &[]).map_err(Err)?;
 
                     Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
                         match path.get(i) {
-                            Some(p) => e.apply(p, i, f),
-                            None => Some(e.clone()),
+                            Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            None => Ok(e.clone()),
                         }
-                    ).collect::<Option<_>>()?)
+                    ).collect::<Result<_,_>>()?)
                 },
                 Exp::Lambda(p, e) => {
-                    if !path.is_within(0..1, &[]) { return None; }
+                    path.is_within(0..1, &[]).map_err(Err)?;
 
                     Exp::Lambda(p.clone(), Box::new(
                         match path.get(0) {
-                            Some(path) => e.apply(path, i + p.bound().len(), f)?,
+                            Some(path) => e.apply(path, i + p.bound().len(), f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
                             None => unreachable!(),
                         }
                     ))
@@ -121,50 +121,53 @@ impl Exp {
                 Exp::Call(e1, box e2) => {
                     Exp::Call(
                         match path.get(TreeChar::Func) {
-                            Some(p) => Box::new(e1.apply(p, i, f)?),
+                            Some(p) => Box::new(e1.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?),
                             None => e1.clone(),
                         },
-                        Box::new(if path.is_within(0..0, &[TreeChar::Func, TreeChar::Tuple]) {
-                            match path.get(TreeChar::Tuple) {
-                                Some(p) => e2.apply(p, i, f)?,
-                                None => (e2).clone(),
-                            }
-                        } else {
-                            match e2 {
-                                Exp::Tuple(v) => {
-                                    if !path.is_within(0..v.len(), &[TreeChar::Func]) { return None; }
-                                    Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
-                                        match path.get(i) {
-                                            Some(p) => e.apply(p, i, f),
-                                            None => Some(e.clone()),
+                        Box::new(
+                            if let Err(outside) = path.is_within(0..0, &[TreeChar::Func, TreeChar::Tuple]) {
+                                match e2 {
+                                    Exp::Tuple(v) => {
+                                        path.is_within(0..v.len(), &[TreeChar::Func]).map_err(|t|Err(outside*t))?;
+
+                                        Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
+                                            match path.get(i) {
+                                                Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                                                None => Ok(e.clone()),
+                                            }
+                                        ).collect::<Result<_,_>>()?)
+                                    },
+                                    e => {
+                                        path.is_within(0..1, &[TreeChar::Func]).map_err(|t|Err(outside*t))?;
+                                        match path.get(0) {
+                                            Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
+                                            None => e.clone(),
                                         }
-                                    ).collect::<Option<_>>()?)
-                                },
-                                e => {
-                                    if !path.is_within(0..1, &[TreeChar::Func]) { return None; }
-                                    match path.get(0) {
-                                        Some(p) => e.apply(p, i, f)?,
-                                        None => e.clone(),
                                     }
                                 }
+                            } else {
+                                match path.get(TreeChar::Tuple) {
+                                    Some(p) => e2.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
+                                    None => (e2).clone(),
+                                }
                             }
-                        })
+                        )
                     )
                 },
                 Exp::Match(e, v) => {
-                    if !path.is_within(0..v.len(), &[TreeChar::Func]) { return None; }
+                    path.is_within(0..v.len(), &[TreeChar::Func]).map_err(Err)?;
 
                     Exp::Match(
                         match path.get(TreeChar::Func) {
-                            Some(p) => Box::new(e.apply(p, i, f)?),
+                            Some(p) => Box::new(e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?),
                             None => e.clone(),
                         },
                         v.into_iter().enumerate().map(|(i, (p, e))|
                             match path.get(i) {
-                                Some(path) => e.apply(path, i, f).map(|e|(p.clone(), e)),
-                                None => Some((p.clone(), e.clone())),
+                                Some(path) => e.apply(path, i, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                                None => Ok((p.clone(), e.clone())),
                             }
-                        ).collect::<Option<_>>()?
+                        ).collect::<Result<_,_>>()?
                     )
                 }
             })

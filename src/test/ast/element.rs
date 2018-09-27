@@ -17,8 +17,8 @@ fn struct_empty() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_atom(e_id);
 
-        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id, 0)));
-        assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
+        assert_eq!(env.exp.get(e_id), Ok(&ExpVal::new_empty(ty_id, 0)));
+        assert_eq!(env.ty.get_id("Test").map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
     }
 
     assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+1, lens.1+1, lens.2));
@@ -40,8 +40,8 @@ fn struct_tuple() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_comp(e_id);
 
-        assert_eq!(env.exp.get(e_id), Some(&ExpVal::new_empty(ty_id, 0)));
-        assert_eq!(env.ty.get_id("Test").and_then(|id|env.ty.get(id)), Some(&type_val))
+        assert_eq!(env.exp.get(e_id), Ok(&ExpVal::new_empty(ty_id, 0)));
+        assert_eq!(env.ty.get_id("Test").map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
     }
 
     assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+3, lens.2));
@@ -57,7 +57,7 @@ fn letting() {
         element!(let two = Succ(Succ(Zero))).define(&mut env).unwrap();
         element!(let two_marked: Nat = Succ(Succ(Zero))).define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get_id("two").and_then(|id|env.exp.get(id)), env.exp.get_id("two_marked").and_then(|id|env.exp.get(id)));
+        assert_eq!(env.exp.get_id("two").map(|id|env.exp.get(id).unwrap()), env.exp.get_id("two_marked").map(|id|env.exp.get(id).unwrap()));
     }
 
     assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+4, lens.1+1, lens.2));

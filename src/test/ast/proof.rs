@@ -12,7 +12,7 @@ fn deref() {
     env.truth.add("a".to_owned(), TruthVal::new(e_id.clone()));
     let p = proof!(a());
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(e_id));
+    assert_eq!(re, Ok(e_id));
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn replace_nothing() {
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false));
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(TRUE_ID)));
+    assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn replace() {
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false));
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(FALSE_ID)));
+    assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn unwraping_var() {
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false)~wrap(x)[]);
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(TRUE_ID)));
+    assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn unwraping_match() {
         (false, false) => false
     }))[]);
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(FALSE_ID)));
+    assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn unwraping_lambda_call() {
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
     let p = proof!(m()~wrap(((a: Bool, b: Bool) -> b)(true, false))[]);
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(FALSE_ID)));
+    assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn unwraping_function_call() {
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
     let p = proof!(m()~wrap(f(true, false))[]);
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(FALSE_ID)));
+    assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
 #[test]
@@ -124,5 +124,5 @@ fn match_proof() {
         }
     );
     let re = p.execute(&env.local(), &MatchEnv::new());
-    assert_eq!(re, Some(exp_id!(x)));
+    assert_eq!(re, Ok(exp_id!(x)));
 }

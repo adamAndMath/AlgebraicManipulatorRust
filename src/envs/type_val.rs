@@ -3,7 +3,7 @@ use super::ExpVal;
 use variance::Variance;
 
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeVal {
     gen: Vec<Variance>,
     atoms: Vec<ID<ExpVal>>,

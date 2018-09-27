@@ -1,6 +1,6 @@
 use envs::LocalEnvs;
-use id::renamed::ExpID;
-use super::{ Type, Pattern };
+use id::renamed::{ ExpID };
+use super::{ Type, Pattern, ErrAst };
 
 #[derive(Debug)]
 pub enum Exp {
@@ -12,10 +12,10 @@ pub enum Exp {
 }
 
 impl Exp {
-    pub fn to_id(&self, env: &LocalEnvs) -> Option<ExpID> {
-        Some(match self {
-            Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x)?, gs.into_iter().map(|g|g.to_id(env)).collect::<Option<_>>()?),
-            Exp::Tuple(v) => ExpID::Tuple(v.into_iter().map(|e|e.to_id(env)).collect::<Option<_>>()?),
+    pub fn to_id(&self, env: &LocalEnvs) -> Result<ExpID, ErrAst> {
+        Ok(match self {
+            Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x).map_err(ErrAst::UnknownVar)?, gs.into_iter().map(|g|g.to_id(env)).collect::<Result<_,_>>()?),
+            Exp::Tuple(v) => ExpID::Tuple(v.into_iter().map(|e|e.to_id(env)).collect::<Result<_,_>>()?),
             Exp::Lambda(p, e) => {
                 let ns = p.bound();
                 let p = p.to_id(env)?;
@@ -30,8 +30,8 @@ impl Exp {
                     let ns = p.bound();
                     let p = p.to_id(env)?;
                     let ps = ns.into_iter().zip(p.bound()).collect();
-                    Some((p, e.to_id(&env.scope(ps))?))
-                }).collect::<Option<_>>()?)
+                    Ok((p, e.to_id(&env.scope(ps))?))
+                }).collect::<Result<_,ErrAst>>()?)
             },
         })
     }
