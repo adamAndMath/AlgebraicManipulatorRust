@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp, Proof };
+use super::{ Type, Exp, Proof, MatchEnv };
 use variance::Variance::{ self, * };
 use id::renamed::{ TypeID, PatternID, ExpID };
 
@@ -110,7 +110,7 @@ impl Element {
                     let ps = ps.into_iter().map(|(p,t)|Some((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Option<Vec<_>>>()?;
                     let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
-                    let proof = proof.execute(&env)?;
+                    let proof = proof.execute(&env, &MatchEnv::new())?;
                     if ts.len() == 0 {
                         proof
                     } else {

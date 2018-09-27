@@ -1,5 +1,5 @@
 use predef::*;
-use env::ID;
+use env::{ ID, LocalID };
 use envs::*;
 use super::{ Type, Exp };
 
@@ -25,6 +25,18 @@ impl Pattern {
                 Some(b)
             },
             Pattern::Tuple(v) => Some(Type::Tuple(v.into_iter().map(|p|p.type_check(env)).collect::<Option<_>>()?)),
+        }
+    }
+
+    pub fn to_exp(&self, i: usize) -> Exp {
+        match self {
+            Pattern::Var(ty) => Exp::Var(LocalID::new(i), vec![]),
+            Pattern::Atom(id) => Exp::Var((*id).into(), vec![]),
+            Pattern::Comp(id, p) => Exp::Call(Box::new(Exp::Var((*id).into(), vec![])), Box::new(p.to_exp(i))),
+            Pattern::Tuple(v) => {
+                let mut i = i;
+                Exp::Tuple(v.into_iter().map(|p|{let e = p.to_exp(i); i += p.bound().len(); e}).collect())
+            }
         }
     }
 

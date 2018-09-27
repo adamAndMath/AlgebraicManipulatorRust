@@ -33,8 +33,8 @@ fn main() {
 
         proof DoubleNegative(b: Bool) {
             match b {
-                true => ID(not(not(true)))~wrap()[1,0]~wrap()[1].wrap(b)[0,0,0|1],
-                false => ID(not(not(false)))~wrap()[1,0]~wrap()[1].wrap(b)[0,0,0|1]
+                true => ID(not(not(true)))~wrap()[1,0]~wrap()[1]~match(b)[0,0,0|1],
+                false => ID(not(not(false)))~wrap()[1,0]~wrap()[1]~match(b)[0,0,0|1]
             }
         }
 
@@ -54,17 +54,17 @@ fn main() {
 
         proof And_Commutative(a: Bool, b: Bool) {
             match (a, b) {
-                (true, true) => ID(and(true, true)).wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
-                (true, false) => ID(and(true, false))~wrap()[1].wrap(and(false, true))[1].wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
-                (false, true) => ID(and(false, true))~wrap()[1].wrap(and(true, false))[1].wrap(a)[0,0|1,1].wrap(b)[0,1|1,0],
-                (false, false) => ID(and(false, false)).wrap(a)[0,0|1,1].wrap(b)[0,1|1,0]
+                (true, true) => ID(and(true, true))~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (true, false) => ID(and(true, false))~wrap()[1].wrap(and(false, true))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (false, true) => ID(and(false, true))~wrap()[1].wrap(and(true, false))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (false, false) => ID(and(false, false))~match(a)[0,0|1,1]~match(b)[0,1|1,0]
             }
         }
 
         proof And_NeutralElement_Left(b: Bool) {
             match b {
-                true => ID(and(true, true))~wrap()[1].wrap(b)[0,1|1],
-                false => ID(and(true, false))~wrap()[1].wrap(b)[0,1|1]
+                true => ID(and(true, true))~wrap()[1]~match(b)[0,1|1],
+                false => ID(and(true, false))~wrap()[1]~match(b)[0,1|1]
             }
         }
 
@@ -74,8 +74,8 @@ fn main() {
 
         proof And_AbsorbativeElement_Left(b: Bool) {
             match b {
-                true => ID(and(false, b))~wrap()[1,1]~wrap()[1],
-                false => ID(and(false, b))~wrap()[1,1]~wrap()[1]
+                true => ID(and(false, b)).match()[1,1]~wrap()[1],
+                false => ID(and(false, b)).match()[1,1]~wrap()[1]
             }
         }
 
