@@ -1,9 +1,9 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp, Proof, MatchEnv, ErrAst };
+use super::{ Type, Exp, Proof, ErrAst };
 use variance::Variance::{ self, * };
-use id::renamed::{ TypeID, PatternID, ExpID, ErrID };
+use id::renamed::{ TypeID, PatternID, ExpID, MatchEnv, ErrID };
 
 pub enum Element {
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
@@ -110,7 +110,7 @@ impl Element {
                     let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
-                    let proof = proof.execute(&env, &MatchEnv::new())?;
+                    let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
                     if ts.len() == 0 {
                         proof
                     } else {

@@ -20,6 +20,7 @@ fn main() {
     use variance::Variance;
     use tree::Tree;
     use ast::*;
+    use id::Direction;
 
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);

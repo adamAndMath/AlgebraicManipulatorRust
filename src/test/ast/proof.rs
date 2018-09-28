@@ -11,7 +11,7 @@ fn deref() {
     let e_id = exp_id!(TRUE_ID);
     env.truth.add("a".to_owned(), TruthVal::new(e_id.clone()));
     let p = proof!(a());
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(e_id));
 }
 
@@ -24,7 +24,7 @@ fn replace_nothing() {
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false));
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
@@ -37,7 +37,7 @@ fn replace() {
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false));
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -51,7 +51,7 @@ fn unwraping_var() {
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("b".to_owned(), TruthVal::new(e_id));
     let p = proof!(b(false)~wrap(x)[]);
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
@@ -74,7 +74,7 @@ fn unwraping_match() {
         (false, true) => false,
         (false, false) => false
     }))[]);
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -87,7 +87,7 @@ fn unwraping_lambda_call() {
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
     let p = proof!(m()~wrap(((a: Bool, b: Bool) -> b)(true, false))[]);
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -101,7 +101,7 @@ fn unwraping_function_call() {
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
     let p = proof!(m()~wrap(f(true, false))[]);
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -123,6 +123,6 @@ fn match_proof() {
             false => m().match(x)[f]~wrap(match(false, { true => true, false => false }))[]~match(x)[]
         }
     );
-    let re = p.execute(&env.local(), &MatchEnv::new());
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(x)));
 }

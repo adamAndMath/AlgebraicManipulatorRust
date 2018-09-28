@@ -1,6 +1,5 @@
 use env::LocalEnv;
 use super::{ ExpVal, TypeVal, TruthVal };
-use id::{ Type, Exp };
 
 #[derive(Debug)]
 pub struct LocalEnvs<'a> {
@@ -26,11 +25,19 @@ impl<'a> LocalEnvs<'a> {
         }
     }
     
+    pub fn scope_truth<'b>(&'b self, v: Vec<(String, TruthVal)>) -> LocalEnvs<'b> where 'a: 'b {
+        LocalEnvs {
+            exp: self.exp.scope(vec![]),
+            ty: self.ty.scope(vec![]),
+            truth: self.truth.scope(v),
+        }
+    }
+    
     pub fn scope_anon<'b>(&'b self, v: Vec<ExpVal>) -> LocalEnvs<'b> where 'a: 'b {
         LocalEnvs {
             exp: self.exp.scope_anon(v),
             ty: self.ty.scope_anon(vec![]),
-            truth: self.truth.scope(vec![]),
+            truth: self.truth.scope_anon(vec![]),
         }
     }
     
@@ -38,7 +45,15 @@ impl<'a> LocalEnvs<'a> {
         LocalEnvs {
             exp: self.exp.scope_anon(vec![]),
             ty: self.ty.scope_anon(v),
-            truth: self.truth.scope(vec![]),
+            truth: self.truth.scope_anon(vec![]),
+        }
+    }
+    
+    pub fn scope_truth_anon<'b>(&'b self, v: Vec<TruthVal>) -> LocalEnvs<'b> where 'a: 'b {
+        LocalEnvs {
+            exp: self.exp.scope_anon(vec![]),
+            ty: self.ty.scope_anon(vec![]),
+            truth: self.truth.scope_anon(v),
         }
     }
 }
