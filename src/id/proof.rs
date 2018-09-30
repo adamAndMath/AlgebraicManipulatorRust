@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use env::{ LocalID, PushLocal };
 use envs::{ LocalEnvs, ExpVal, TruthVal };
+use super::{ Type, Pattern, Exp, ErrID, SetLocal };
 use tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

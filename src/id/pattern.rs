@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use predef::*;
 use env::{ ID, LocalID, PushLocal };
 use envs::*;
-use super::{ Type, Exp, ErrID, TypeCheck, TypeCheckIter };
+use super::{ Type, Exp, ErrID, TypeCheck, TypeCheckIter, SetLocal };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pattern {
@@ -20,14 +20,6 @@ impl TypeCheck for Pattern {
             Pattern::Comp(id, p) => env.exp.get(*id)?.ty().call_output(&p.type_check(env)?)?,
             Pattern::Tuple(v) => Type::Tuple(v.type_check(env)?),
         })
-    }
-}
-
-impl<'a, T: TypeCheck> TypeCheck for (&'a Pattern, &'a T) {
-    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
-        let (p, e) = self;
-        let b = e.type_check(&env.scope_anon(p.bound()))?;
-        Ok(func(p.type_check(env)?, b))
     }
 }
 
@@ -51,8 +43,26 @@ impl PushLocal<TypeVal> for Pattern {
         match self {
             Pattern::Var(ty) => Pattern::Var(ty.push_local_with_min(ph, min, amount)),
             Pattern::Atom(id) => Pattern::Atom(*id),
-            Pattern::Comp(id, p) => Pattern::Comp(*id, p.push_local_with_min(ph, min ,amount)),
+            Pattern::Comp(id, p) => Pattern::Comp(*id, p.push_local_with_min(ph, min, amount)),
             Pattern::Tuple(v) => Pattern::Tuple(v.push_local_with_min(ph, min, amount)),
+        }
+    }
+}
+
+impl<U: SetLocal<Exp>> SetLocal<Exp> for (Pattern, U) {
+    fn set_with_min(&self, min: usize, par: &[Exp]) -> Self {
+        let (p, e) = self;
+        (p.clone(), e.set_with_min(min + p.bounds(), par))
+    }
+}
+
+impl SetLocal<Type> for Pattern {
+    fn set_with_min(&self, min: usize, par: &[Type]) -> Self {
+        match self {
+            Pattern::Var(ty) => Pattern::Var(ty.set_with_min(min, par)),
+            Pattern::Atom(id) => Pattern::Atom(*id),
+            Pattern::Comp(id, p) => Pattern::Comp(*id, p.set_with_min(min, par)),
+            Pattern::Tuple(v) => Pattern::Tuple(v.set_with_min(min, par)),
         }
     }
 }

@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use env::{ LocalID, PushLocal };
+use super::{ Type, Pattern, ErrID, TypeCheck, TypeCheckIter, SetLocal };
 use envs::{ ExpVal, TypeVal, LocalEnvs };
 use tree::{Tree, TreeChar };
 
@@ -54,6 +55,7 @@ impl PushLocal<TypeVal> for Exp {
     }
     }
 
+impl SetLocal for Exp {
     fn set_with_min(&self, min: usize, par: &[Self]) -> Self {
         match self {
             Exp::Var(LocalID::Local(id, _), ty) => {
@@ -62,16 +64,29 @@ impl PushLocal<TypeVal> for Exp {
                 } else if id - min >= par.len() {
                     Exp::Var(LocalID::new(id - par.len()), ty.clone())
                 } else {
-                    par[id - min].push_local(min)
+                    par[id - min].push_local(PhantomData::<ExpVal>, min)
                 }
             },
             Exp::Var(id, ty) => Exp::Var(*id, ty.clone()),
-            Exp::Tuple(v) => Exp::Tuple(v.into_iter().map(|e|e.set_with_min(min, par)).collect()),
-            Exp::Closure(v) => Exp::Closure(v.into_iter().map(|(p, e)|(p.clone(), e.set_with_min(min + p.bounds(), par))).collect()),
-            Exp::Call(f, e) => Exp::Call(Box::new(f.set_with_min(min, par)), Box::new(e.set_with_min(min, par))),
+            Exp::Tuple(v) => Exp::Tuple(v.set_with_min(min, par)),
+            Exp::Closure(v) => Exp::Closure(v.set_with_min(min, par)),
+            Exp::Call(f, e) => Exp::Call(f.set_with_min(min, par), e.set_with_min(min, par)),
+        }
+    }
+}
+
+impl SetLocal<Type> for Exp {
+    fn set_with_min(&self, min: usize, par: &[Type]) -> Self {
+        match self {
+            Exp::Var(id, ty) => Exp::Var(*id, ty.set_with_min(min, par)),
+            Exp::Tuple(v) => Exp::Tuple(v.set_with_min(min, par)),
+            Exp::Closure(v) => Exp::Closure(v.set_with_min(min, par)),
+            Exp::Call(f, e) => Exp::Call(f.set_with_min(min, par), e.set_with_min(min, par)),
+        }
         }
     }
 
+impl Exp {
     pub fn apply<E, F: Fn(&Self, usize) -> Result<Self, E>>(&self, path: &Tree, i: usize, f: &F) -> Result<Self, Result<E, Tree>> {
         if path.is_empty() {
             f(self, i).map_err(Ok)

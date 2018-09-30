@@ -4,6 +4,7 @@ mod pattern;
 mod proof;
 mod id_err;
 mod type_check;
+mod set_local;
 
 pub use self::ty::Type;
 pub use self::exp::Exp;
@@ -12,6 +13,7 @@ pub use self::id_err::ErrID;
 pub use self::proof::*;
 pub use self::type_check::TypeCheck;
 pub use self::type_check::TypeCheckIter;
+pub use self::set_local::SetLocal;
 
 pub mod renamed {
     pub use super::{
@@ -25,5 +27,6 @@ pub mod renamed {
         RefType,
         ErrID,
         TypeCheck,
+        SetLocal
     };
 }
