@@ -1,6 +1,6 @@
+use std::marker::PhantomData;
 use env::{ LocalID, PushLocal };
-use super::{ Type, Pattern, ErrID, TypeCheck, TypeCheckIter };
-use envs::{ ExpVal, LocalEnvs };
+use envs::{ ExpVal, TypeVal, LocalEnvs };
 use tree::{Tree, TreeChar };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -32,20 +32,26 @@ impl TypeCheck for Exp {
     }
 }
 
-impl PushLocal for Exp {
-    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
+impl PushLocal<ExpVal> for Exp {
+    fn push_local_with_min(&self, p: PhantomData<ExpVal>, min: usize, amount: usize) -> Self {
         match self {
-            Exp::Var(id, ty) => Exp::Var(id.push_local_with_min(min, amount), ty.clone()),
-            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(min, amount)),
-            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(min, amount)),
-            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(min, amount), e.push_local_with_min(min, amount)),
+            Exp::Var(id, ty) => Exp::Var(id.push_local_with_min(p, min, amount), ty.clone()),
+            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(p, min, amount)),
+            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(p, min, amount)),
+            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(p, min, amount), e.push_local_with_min(p, min, amount)),
         }
     }
 }
 
-impl Exp {
-    pub fn set(&self, par: &[Self]) -> Self {
-        self.set_with_min(0, par)
+impl PushLocal<TypeVal> for Exp {
+    fn push_local_with_min(&self, p: PhantomData<TypeVal>, min: usize, amount: usize) -> Self {
+        match self {
+            Exp::Var(id, ty) => Exp::Var(*id, ty.push_local_with_min(p, min, amount)),
+            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(p, min, amount)),
+            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(p, min, amount)),
+            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(p, min, amount), e.push_local_with_min(p, min, amount)),
+        }
+    }
     }
 
     fn set_with_min(&self, min: usize, par: &[Self]) -> Self {

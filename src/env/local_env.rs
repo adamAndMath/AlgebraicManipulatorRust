@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
@@ -28,7 +29,7 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
             LocalEnv::Scope(env, m, v) =>
                 match m.get(name).map(|id|LocalID::new(*id)) {
                     Some(id) => Ok(id),
-                    None => env.get_id(name).map(|id|id.push_local(v.len())),
+                    None => env.get_id(name).map(|id|id.push_local(PhantomData::<T>, v.len())),
                 },
         }
     }
@@ -42,7 +43,7 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
                 if v.len() > id {
                     v.get(id).ok_or(LocalID::Local(id, p))
                 } else {
-                    env.get(LocalID::Local(id - v.len(), p)).map_err(|id|id.push_local(v.len()))
+                    env.get(LocalID::Local(id - v.len(), p)).map_err(|id|id.push_local(PhantomData::<T>, v.len()))
                 },
         }
     }

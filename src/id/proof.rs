@@ -1,6 +1,6 @@
+use std::marker::PhantomData;
 use env::{ LocalID, PushLocal };
-use envs::{ LocalEnvs, TruthVal };
-use super::{ Type, Pattern, Exp, ErrID };
+use envs::{ LocalEnvs, ExpVal, TruthVal };
 use tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,7 +26,7 @@ impl<'a> MatchEnv<'a> {
     pub fn get(&self, k: &Exp) -> Option<Exp> {
         match self {
             MatchEnv::Base() => None,
-            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||b.get(k).map(|val|val.push_local(v.len()))),
+            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||b.get(k).map(|val|val.push_local(PhantomData::<ExpVal>, v.len()))),
         }
     }
 }
@@ -67,10 +67,10 @@ impl TruthRef {
                     Direction::Forwards => unimplemented!(),
                     Direction::Backwards => {
                         exp.apply(path, 0, &|e, i| {
-                            let par = par.push_local(i);
+                            let par = par.push_local(PhantomData::<ExpVal>, i);
                             if *e == par {
                                 match e {
-                                    Exp::Var(id, _) => env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id)).map(|e|e.push_local(i)),
+                                    Exp::Var(id, _) => env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id)).map(|e|e.push_local(PhantomData::<ExpVal>, i)),
                                     Exp::Call(box f, box arg) =>
                                         match f {
                                             Exp::Var(id, gs) =>
@@ -102,9 +102,9 @@ impl TruthRef {
                 };
 
                 exp.apply(path, 0, &|e, i| {
-                    let par = par.push_local(i);
+                    let par = par.push_local(PhantomData::<ExpVal>, i);
                     if *e == par {
-                        Ok(res.push_local(i))
+                        Ok(res.push_local(PhantomData::<ExpVal>, i))
                     } else {
                         Err(ErrID::ExpMismatch(e.clone(), par))
                     }
@@ -135,7 +135,7 @@ impl Proof {
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
                 for (pattern, proof) in v {
-                    let p = proof.execute(env, &match_env.scope(expand(0, &e.push_local(pattern.bounds()), pattern)?))?;
+                    let p = proof.execute(env, &match_env.scope(expand(0, &e.push_local(PhantomData::<ExpVal>, pattern.bounds()), pattern)?))?;
                     if let Some(re) = &re {
                         if *re != p {
                             return Err(ErrID::ExpMismatch(p, re.clone()));

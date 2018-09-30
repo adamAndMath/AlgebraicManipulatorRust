@@ -20,15 +20,15 @@ impl<T: ?Sized> LocalID<T> {
     }
 }
 
-impl<T: ?Sized> PushLocal for LocalID<T> {
-    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
+impl<T: ?Sized> PushLocal<T> for LocalID<T> {
+    fn push_local_with_min(&self, p: PhantomData<T>, min: usize, amount: usize) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(*id),
             LocalID::Local(id, p) => LocalID::Local(if *id >= min { id + amount } else { *id }, PhantomData),
         }
     }
 
-    fn push_local(&self, amount: usize) -> Self {
+    fn push_local(&self, p: PhantomData<T>, amount: usize) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(*id),
             LocalID::Local(id, p) => LocalID::Local(id + amount, PhantomData),

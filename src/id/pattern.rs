@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use predef::*;
 use env::{ ID, LocalID, PushLocal };
 use envs::*;
@@ -38,10 +39,21 @@ impl<T: TypeCheck> TypeCheck for (Pattern, T) {
     }
 }
 
-impl<T: PushLocal> PushLocal for (Pattern, T) {
-    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
+impl<U: PushLocal<ExpVal>> PushLocal<ExpVal> for (Pattern, U) {
+    fn push_local_with_min(&self, ph: PhantomData<ExpVal>, min: usize, amount: usize) -> Self {
         let (p, e) = self;
-        (p.clone(), e.push_local_with_min(min + p.bounds(), amount))
+        (p.clone(), e.push_local_with_min(ph, min + p.bounds(), amount))
+    }
+}
+
+impl PushLocal<TypeVal> for Pattern {
+    fn push_local_with_min(&self, ph: PhantomData<TypeVal>, min: usize, amount: usize) -> Self {
+        match self {
+            Pattern::Var(ty) => Pattern::Var(ty.push_local_with_min(ph, min, amount)),
+            Pattern::Atom(id) => Pattern::Atom(*id),
+            Pattern::Comp(id, p) => Pattern::Comp(*id, p.push_local_with_min(ph, min ,amount)),
+            Pattern::Tuple(v) => Pattern::Tuple(v.push_local_with_min(ph, min, amount)),
+        }
     }
 }
 
