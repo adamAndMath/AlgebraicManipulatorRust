@@ -2,7 +2,7 @@ use predef::*;
 use envs::*;
 use env::LocalID;
 use id::renamed::ExpID;
-use ast::{ Type, Pattern, Exp };
+use ast::{ Type, Pattern, Exp, ToID };
 use tree::*;
 
 #[test]

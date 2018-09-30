@@ -191,7 +191,7 @@ macro_rules! element_gen {
 }
 
 macro_rules! element_par {
-    ($($p:ident : $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))*),*) => (vec![$((stringify!($p).to_owned(), ttype!($($t)*$([$($tg)*])*$(($($tp)*))*))),*]);
+    ($($p:ident : $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))*),*) => (vec![$(Par::new(stringify!($p).to_owned(), ttype!($($t)*$([$($tg)*])*$(($($tp)*))*))),*]);
 }
 
 macro_rules! enum_variants {

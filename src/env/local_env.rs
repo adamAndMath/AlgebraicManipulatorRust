@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use super::{ Env, LocalID };
+use super::{ Env, LocalID, PushLocal };
 
 #[derive(Debug)]
 pub enum LocalEnv<'a, T: 'a> {

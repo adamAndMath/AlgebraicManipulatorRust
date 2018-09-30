@@ -1,4 +1,4 @@
-use env::LocalID;
+use env::{ LocalID, PushLocal };
 use envs::{ LocalEnvs, TruthVal };
 use super::{ Type, Pattern, Exp, ErrID };
 use tree::Tree;
@@ -96,30 +96,20 @@ impl TruthRef {
             RefType::Match => {
                 if self.par.len() != 1 { return Err(ErrID::ArgumentAmount(self.id, 1)); }
                 let par = &self.par[0];
-                let res = match_env.get(par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let res = &match_env.get(par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let (par, res) = match dir {
+                    Direction::Forwards => (par, res),
+                    Direction::Backwards => (res, par),
+                };
 
-                match dir {
-                    Direction::Forwards => {
-                        exp.apply(path, 0, &|e, i| {
-                            let par = par.push_local(i);
-                            if *e == par {
-                                Ok(res.push_local(i))
-                            } else {
-                                Err(ErrID::ExpMismatch(e.clone(), par))
-                            }
-                        }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
-                    },
-                    Direction::Backwards => {
-                        exp.apply(path, 0, &|e, i| {
-                            let res = res.push_local(i);
-                            if *e == res {
-                                Ok(par.push_local(i))
-                            } else {
-                                Err(ErrID::ExpMismatch(e.clone(), res))
-                            }
-                        }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
-                    },
-                }
+                exp.apply(path, 0, &|e, i| {
+                    let par = par.push_local(i);
+                    if *e == par {
+                        Ok(res.push_local(i))
+                    } else {
+                        Err(ErrID::ExpMismatch(e.clone(), par))
+                    }
+                }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
             },
             _ => unimplemented!(),
         }
@@ -146,7 +136,7 @@ impl Proof {
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
                 for (pattern, proof) in v {
-                    let p = proof.execute(env, &match_env.scope(expand(0, &e.push_local(pattern.bound().len()), pattern)?))?;
+                    let p = proof.execute(env, &match_env.scope(expand(0, &e.push_local(pattern.bounds()), pattern)?))?;
                     if let Some(re) = &re {
                         if *re != p {
                             return Err(ErrID::ExpMismatch(p, re.clone()));
@@ -168,7 +158,7 @@ fn expand(i: usize, e: &Exp, p: &Pattern) -> Result<Vec<(Exp, Exp)>, ErrID> {
         if es.len() != ps.len() { unreachable!("This should be caught by type checker"); }
         let mut i = i;
         for (e, p) in es.into_iter().zip(ps) {
-            let b = p.bound().len();
+            let b = p.bounds();
             v.extend(expand(i, e, p)?);
             i += b;
         }

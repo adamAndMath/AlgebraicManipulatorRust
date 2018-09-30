@@ -3,12 +3,15 @@ mod exp;
 mod pattern;
 mod proof;
 mod id_err;
+mod type_check;
 
 pub use self::ty::Type;
 pub use self::exp::Exp;
 pub use self::pattern::Pattern;
 pub use self::id_err::ErrID;
 pub use self::proof::*;
+pub use self::type_check::TypeCheck;
+pub use self::type_check::TypeCheckIter;
 
 pub mod renamed {
     pub use super::{
@@ -21,5 +24,6 @@ pub mod renamed {
         MatchEnv,
         RefType,
         ErrID,
+        TypeCheck,
     };
 }

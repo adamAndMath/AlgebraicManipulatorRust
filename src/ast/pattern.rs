@@ -1,6 +1,6 @@
 use predef::*;
 use envs::LocalEnvs;
-use super::{ Type, ErrAst };
+use super::{ Type, ErrAst, ToID };
 use id::renamed::{ TypeID, PatternID, ErrID };
 
 #[derive(Debug)]
@@ -11,8 +11,9 @@ pub enum Pattern {
     Tuple(Vec<Pattern>),
 }
 
-impl Pattern {
-    pub fn to_id(&self, env: &LocalEnvs) -> Result<PatternID, ErrAst> {
+impl ToID for Pattern {
+    type To = PatternID;
+    fn to_id(&self, env: &LocalEnvs) -> Result<PatternID, ErrAst> {
         Ok(match self {
             Pattern::Var(_, ty) => PatternID::Var(ty.to_id(env)?),
             Pattern::Atom(n) => {
@@ -36,12 +37,32 @@ impl Pattern {
                 }?;
                 let id = id.global()?;
                 if !ty_out.contains_comp(&id) { return Err(ErrAst::ErrID(ErrID::NotAtomic(id.into(), out_id))) }
-                PatternID::Comp(id, Box::new(p.to_id(env)?))
+                PatternID::Comp(id, p.to_id(env)?)
             },
-            Pattern::Tuple(v) => PatternID::Tuple(v.into_iter().map(|p|p.to_id(env)).collect::<Result<_,_>>()?),
+            Pattern::Tuple(v) => PatternID::Tuple(v.to_id(env)?),
         })
     }
+}
 
+impl<'a, T: ToID> ToID for (&'a Pattern, &'a T) {
+    type To = (PatternID, T::To);
+    fn to_id(&self, env: &LocalEnvs) -> Result<(PatternID, T::To), ErrAst> {
+        let (p, e) = self;
+        let ns = p.bound();
+        let p = p.to_id(env)?;
+        let ps = ns.into_iter().zip(p.bound()).collect();
+        Ok((p, e.to_id(&env.scope(ps))?))
+    }
+}
+
+impl<T: ToID> ToID for (Pattern, T) {
+    type To = (PatternID, T::To);
+    fn to_id(&self, env: &LocalEnvs) -> Result<(PatternID, T::To), ErrAst> {
+        (&self.0, &self.1).to_id(env)
+    }
+}
+
+impl Pattern {
     pub fn bound(&self) -> Vec<String> {
         match self {
             Pattern::Var(n, _) => vec![n.clone()],

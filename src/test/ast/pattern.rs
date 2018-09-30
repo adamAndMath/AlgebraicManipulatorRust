@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use variance::Variance;
-use ast::{ Type, Pattern };
+use ast::{ Type, Pattern, ToID };
 use id::renamed::{ PatternID, TypeID };
 
 #[test]

@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use super::ID;
+use super::{ ID, PushLocal };
 
 #[derive(Debug)]
 pub enum LocalID<T: ?Sized> {
@@ -18,11 +18,20 @@ impl<T: ?Sized> LocalID<T> {
             id => Err(id),
         }
     }
+}
 
-    pub fn push_local(self, amount: usize) -> Self {
+impl<T: ?Sized> PushLocal for LocalID<T> {
+    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
         match self {
-            LocalID::Global(id) => LocalID::Global(id),
-            LocalID::Local(id, p) => LocalID::Local(id + amount, p),
+            LocalID::Global(id) => LocalID::Global(*id),
+            LocalID::Local(id, p) => LocalID::Local(if *id >= min { id + amount } else { *id }, PhantomData),
+        }
+    }
+
+    fn push_local(&self, amount: usize) -> Self {
+        match self {
+            LocalID::Global(id) => LocalID::Global(*id),
+            LocalID::Local(id, p) => LocalID::Local(id + amount, PhantomData),
         }
     }
 }

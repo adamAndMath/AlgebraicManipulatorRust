@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use variance::Variance;
-use id::renamed::{ PatternID, TypeID };
+use id::renamed::{ PatternID, TypeID, TypeCheck };
 
 #[test]
 fn type_check() {

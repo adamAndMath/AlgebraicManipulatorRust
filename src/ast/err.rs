@@ -8,7 +8,6 @@ pub enum ErrAst {
     UnknownVar(String),
     UnknownType(String),
     UnknownTruth(String),
-    ArgumentCount(String, usize),
     ErrID(ErrID),
 }
 

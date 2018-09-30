@@ -1,7 +1,7 @@
 use predef::*;
-use env::{ ID, LocalID };
+use env::{ ID, LocalID, PushLocal };
 use envs::*;
-use super::{ Type, Exp, ErrID };
+use super::{ Type, Exp, ErrID, TypeCheck, TypeCheckIter };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pattern {
@@ -11,31 +11,49 @@ pub enum Pattern {
     Tuple(Vec<Pattern>),
 }
 
-impl Pattern {
-    pub fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+impl TypeCheck for Pattern {
+    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
             Pattern::Var(ty) => ty.clone(),
             Pattern::Atom(id) => env.exp.get(*id)?.ty(),
-            Pattern::Comp(id, p) => {
-                let f = env.exp.get(*id)?;
-                let t = p.type_check(env)?;
-
-                let (p, b) = get_fn_types(f.ty())?;
-                if t != p { return Err(ErrID::TypeMismatch(t, p)) }
-                b
-            },
-            Pattern::Tuple(v) => Type::Tuple(v.into_iter().map(|p|p.type_check(env)).collect::<Result<_, ErrID>>()?),
+            Pattern::Comp(id, p) => env.exp.get(*id)?.ty().call_output(&p.type_check(env)?)?,
+            Pattern::Tuple(v) => Type::Tuple(v.type_check(env)?),
         })
     }
+}
 
+impl<'a, T: TypeCheck> TypeCheck for (&'a Pattern, &'a T) {
+    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+        let (p, e) = self;
+        let b = e.type_check(&env.scope_anon(p.bound()))?;
+        Ok(func(p.type_check(env)?, b))
+    }
+}
+
+impl<T: TypeCheck> TypeCheck for (Pattern, T) {
+    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+        let (p, e) = self;
+        let b = e.type_check(&env.scope_anon(p.bound()))?;
+        Ok(func(p.type_check(env)?, b))
+    }
+}
+
+impl<T: PushLocal> PushLocal for (Pattern, T) {
+    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
+        let (p, e) = self;
+        (p.clone(), e.push_local_with_min(min + p.bounds(), amount))
+    }
+}
+
+impl Pattern {
     pub fn to_exp(&self, i: usize) -> Exp {
         match self {
-            Pattern::Var(ty) => Exp::Var(LocalID::new(i), vec![]),
+            Pattern::Var(_) => Exp::Var(LocalID::new(i), vec![]),
             Pattern::Atom(id) => Exp::Var((*id).into(), vec![]),
             Pattern::Comp(id, p) => Exp::Call(Box::new(Exp::Var((*id).into(), vec![])), Box::new(p.to_exp(i))),
             Pattern::Tuple(v) => {
                 let mut i = i;
-                Exp::Tuple(v.into_iter().map(|p|{let e = p.to_exp(i); i += p.bound().len(); e}).collect())
+                Exp::Tuple(v.into_iter().map(|p|{let e = p.to_exp(i); i += p.bounds(); e}).collect())
             }
         }
     }
@@ -46,6 +64,15 @@ impl Pattern {
             Pattern::Atom(_) => vec!(),
             Pattern::Comp(_, p) => p.bound(),
             Pattern::Tuple(ps) => ps.into_iter().flat_map(|p|p.bound()).collect(),
+        }
+    }
+
+    pub fn bounds(&self) -> usize {
+        match self {
+            Pattern::Var(_) => 1,
+            Pattern::Atom(_) => 0,
+            Pattern::Comp(_, p) => p.bounds(),
+            Pattern::Tuple(ps) => ps.into_iter().map(|p|p.bounds()).sum(),
         }
     }
 
@@ -70,7 +97,7 @@ impl Pattern {
             }
             Pattern::Comp(c, box p) => {
                 if let Exp::Call(box Exp::Var(f, _), box e) = &e {
-                    if *f == *c {
+                    if f == c {
                         return p.match_exp(e.clone(), env)
                     }
                 }

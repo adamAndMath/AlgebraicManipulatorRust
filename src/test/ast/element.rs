@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use variance::Variance;
-use ast::{ Type, Pattern, Exp, Element};
+use ast::{ Type, Pattern, Exp, Element, Par, ToID };
 
 
 #[test]

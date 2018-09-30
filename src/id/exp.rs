@@ -1,7 +1,5 @@
-use predef::*;
-use env::LocalID;
-use variance::Variance::*;
-use super::{ Type, Pattern, ErrID };
+use env::{ LocalID, PushLocal };
+use super::{ Type, Pattern, ErrID, TypeCheck, TypeCheckIter };
 use envs::{ ExpVal, LocalEnvs };
 use tree::{Tree, TreeChar };
 
@@ -14,29 +12,18 @@ pub enum Exp {
     Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
 
-impl Exp {
-    pub fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+impl TypeCheck for Exp {
+    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
             Exp::Var(x, gs) => env.exp.get(*x)?.ty(),
-            Exp::Tuple(v) => Type::Tuple(v.into_iter().map(|e|e.type_check(env)).collect::<Result<_,_>>()?),
-            Exp::Lambda(p, e) => {
-                let b = e.type_check(&env.scope_anon(p.bound()))?;
-                Type::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(env)?), (Covariant, b)])
-            },
-            Exp::Call(f, e) => {
-                let f = f.type_check(env)?;
+            Exp::Tuple(v) => Type::Tuple(v.type_check(env)?),
+            Exp::Lambda(p, e) => (p, e).type_check(env)?,
+            Exp::Call(f, e) => f.type_check(env)?.call_output(&e.type_check(env)?)?,
+            Exp::Match(e, ps) => {
                 let e = e.type_check(env)?;
-                
-                let (p, b) = get_fn_types(f)?;
-
-                if e != p { return Err(ErrID::TypeMismatch(e, p)); }
-                
-                b
-            },
-            Exp::Match(_, ps) => {
                 let mut op: Option<Type> = None;
-                for (p, e) in ps {
-                    let t = e.type_check(&env.scope_anon(p.bound()))?;
+                for p in ps.type_check(env)? {
+                    let t = p.call_output(&e)?;
                     if let Some(ref ty) = op {
                         if t != *ty { return Err(ErrID::TypeMismatch(t, ty.clone())) }
                     } else {
@@ -47,28 +34,21 @@ impl Exp {
             },
         })
     }
+}
 
-    pub fn push_local(&self, i: usize) -> Self {
-        self.push_local_with_min(0, i)
-    }
-
-    fn push_local_with_min(&self, min: usize, i: usize) -> Self {
+impl PushLocal for Exp {
+    fn push_local_with_min(&self, min: usize, amount: usize) -> Self {
         match self {
-            Exp::Var(LocalID::Local(id, _), ty) => {
-                if *id < min {
-                    Exp::Var(LocalID::new(*id), ty.clone())
-                } else {
-                    Exp::Var(LocalID::new(id + i), ty.clone())
-                }
-            },
-            Exp::Var(id, ty) => Exp::Var(*id, ty.clone()),
-            Exp::Tuple(v) => Exp::Tuple(v.into_iter().map(|e|e.push_local_with_min(min, i)).collect()),
-            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), Box::new(e.push_local_with_min(min + p.bound().len(), i))),
-            Exp::Call(f, e) => Exp::Call(Box::new(f.push_local_with_min(min, i)), Box::new(e.push_local_with_min(min, i))),
-            Exp::Match(e, v) => Exp::Match(Box::new(e.push_local_with_min(min, i)), v.into_iter().map(|(p, e)|(p.clone(), e.push_local_with_min(min + p.bound().len(), i))).collect()),
+            Exp::Var(id, ty) => Exp::Var(id.push_local_with_min(min, amount), ty.clone()),
+            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(min, amount)),
+            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), e.push_local_with_min(min + p.bounds(), amount)),
+            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(min, amount), e.push_local_with_min(min, amount)),
+            Exp::Match(e, v) => Exp::Match(e.push_local_with_min(min, amount), v.push_local_with_min(min, amount)),
         }
     }
+}
 
+impl Exp {
     pub fn set(&self, par: &[Self]) -> Self {
         self.set_with_min(0, par)
     }
@@ -79,16 +59,16 @@ impl Exp {
                 if *id < min {
                     Exp::Var(LocalID::new(*id), ty.clone())
                 } else if id - min >= par.len() {
-                    Exp::Var(LocalID::new(id - min), ty.clone())
+                    Exp::Var(LocalID::new(id - par.len()), ty.clone())
                 } else {
                     par[id - min].push_local(min)
                 }
             },
             Exp::Var(id, ty) => Exp::Var(*id, ty.clone()),
             Exp::Tuple(v) => Exp::Tuple(v.into_iter().map(|e|e.set_with_min(min, par)).collect()),
-            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), Box::new(e.set_with_min(min + p.bound().len(), par))),
+            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), Box::new(e.set_with_min(min + p.bounds(), par))),
             Exp::Call(f, e) => Exp::Call(Box::new(f.set_with_min(min, par)), Box::new(e.set_with_min(min, par))),
-            Exp::Match(e, v) => Exp::Match(Box::new(e.set_with_min(min, par)), v.into_iter().map(|(p, e)|(p.clone(), e.set_with_min(min + p.bound().len(), par))).collect()),
+            Exp::Match(e, v) => Exp::Match(Box::new(e.set_with_min(min, par)), v.into_iter().map(|(p, e)|(p.clone(), e.set_with_min(min + p.bounds(), par))).collect()),
         }
     }
 
@@ -113,7 +93,7 @@ impl Exp {
 
                     Exp::Lambda(p.clone(), Box::new(
                         match path.get(0) {
-                            Some(path) => e.apply(path, i + p.bound().len(), f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
+                            Some(path) => e.apply(path, i + p.bounds(), f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
                             None => unreachable!(),
                         }
                     ))

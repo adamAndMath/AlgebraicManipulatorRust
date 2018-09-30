@@ -72,3 +72,7 @@ pub fn get_fn_types(ty: Type) -> Result<(Type, Type), ErrID> {
         Err(ErrID::TypeMismatch(ty, Type::Gen(FN_ID.into(), vec![])))
     }
 }
+
+pub fn func(input: Type, output: Type) -> Type {
+    Type::Gen(FN_ID.into(), vec![(Contravariant, input), (Covariant, output)])
+}

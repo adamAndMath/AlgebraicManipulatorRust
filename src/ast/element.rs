@@ -1,16 +1,31 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp, Proof, ErrAst };
+use super::{ Type, Exp, Proof, ErrAst, ToID };
 use variance::Variance::{ self, * };
-use id::renamed::{ TypeID, PatternID, ExpID, MatchEnv, ErrID };
+use id::renamed::{ TypeID, PatternID, ExpID, MatchEnv, ErrID, TypeCheck };
+
+pub struct Par(String, Type);
+
+impl Par {
+    pub fn new(name: String, ty: Type) -> Self {
+        Par(name, ty)
+    }
+}
+
+impl ToID for Par {
+    type To = (String, ExpVal);
+    fn to_id(&self, env: &LocalEnvs) -> Result<(String, ExpVal), ErrAst> {
+        Ok((self.0.clone(), ExpVal::new_empty(self.1.to_id(env)?, 0)))
+    }
+}
 
 pub enum Element {
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
     Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
-    Func(String, Vec<String>, Vec<(String, Type)>, Option<Type>, Exp),
-    Proof(String, Vec<String>, Vec<(String, Type)>, Proof),
+    Func(String, Vec<String>, Vec<Par>, Option<Type>, Exp),
+    Proof(String, Vec<String>, Vec<Par>, Proof),
 }
 
 impl Element {
@@ -23,7 +38,7 @@ impl Element {
                     let e_id = env.exp.add(n.clone(), ExpVal::new_empty(ty, gs.len()));
                     env.ty.get_mut(ty_id).unwrap().push_atom(e_id);
                 } else {
-                    let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local())?;
+                    let p = if let [p] = &ps[..] {p.to_id(&env.local())?} else {TypeID::Tuple(ps.to_id(&env.local())?)};
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
                     let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
                     let f_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty))), gs.len()));
@@ -65,7 +80,7 @@ impl Element {
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect());
-                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
+                    let ps = ps.to_id(&env)?;
                     let ts = ps.iter().map(|(_,e)|PatternID::Var(e.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
                     let e_id = e.to_id(&env)?;
@@ -83,7 +98,7 @@ impl Element {
                     let env = env.local();
                     let env = env.scope_ty(gs.clone());
                     let re = re.to_id(&env)?;
-                    let ts = ps.iter().map(|(_,t)|Ok(PatternID::Var(t.to_id(&env)?))).collect::<Result<Vec<_>,ErrAst>>()?;
+                    let ts = ps.iter().map(|Par(_,t)|Ok(PatternID::Var(t.to_id(&env)?))).collect::<Result<Vec<_>,ErrAst>>()?;
                     let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
                     let t = TypeID::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(&env)?), (Covariant, re.clone())]);
                     (re, p, t)
@@ -92,7 +107,7 @@ impl Element {
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs);
-                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
+                    let ps = ps.to_id(&env)?;
                     let env = env.scope(ps);
                     let e_id = e.to_id(&env)?;
                     let e_ty = e_id.type_check(&env)?;
@@ -107,7 +122,7 @@ impl Element {
                     let env = env.local();
                     let gs = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
                     let env = env.scope_ty(gs);
-                    let ps = ps.into_iter().map(|(p,t)|Ok((p.clone(), ExpVal::new_empty(t.to_id(&env)?, 0)))).collect::<Result<Vec<_>,ErrAst>>()?;
+                    let ps = ps.to_id(&env)?;
                     let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
                     let env = env.scope(ps);
                     let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
