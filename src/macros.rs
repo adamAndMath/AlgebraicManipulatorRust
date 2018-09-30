@@ -88,7 +88,7 @@ macro_rules! pattern {
 macro_rules! pattern_tuple {
     ((pattern!($($e:tt)*), )$(,)* ) => (pattern!($($e)*));
     (($($v:tt)*)$(,)* ) => (Pattern::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($x:ident):*$(($($p:tt)*))*, $($rest:tt)*) => (pattern_tuple!(($($v)* pattern!($($x):*$(($($p)*))*), ) $($rest)*));
+    (($($v:tt)*) $($x:ident):*$(($($p:tt)*))*$([$($g:tt)*])*, $($rest:tt)*) => (pattern_tuple!(($($v)* pattern!($($x):*$(($($p)*))*$([$($g)*])*), ) $($rest)*));
 }
 
 macro_rules! pattern_id {
@@ -166,7 +166,7 @@ macro_rules! element {
     (fn $n:ident($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
         (Element::Func(stringify!($n).to_owned(), vec![], Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
     (fn $n:ident[$($g:ident),*]($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
-        (Element::Func(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![$(stringify!($g).to_owned()),*], vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
+        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
     (fn $n:ident {$($m:tt)*}) =>
         (Element::Func(stringify!($n).to_owned(), vec![], None, exp_match!($($m)*)));
     (fn $n:ident[$($g:ident),*] {$($m:tt)*}) =>

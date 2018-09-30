@@ -101,5 +101,5 @@ fn lists() {
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     
     element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
-   //element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
+    element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
 }
