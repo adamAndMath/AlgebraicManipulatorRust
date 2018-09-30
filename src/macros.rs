@@ -67,7 +67,7 @@ macro_rules! exp_tuple {
 
 macro_rules! exp_id {
     ($x:ident) => (ExpID::Var($x.into(), vec![]));
-    ($x:ident[$($g:tt)*]) => (ExpID::Var($x.into(), type_id_vec!(() $($g)*)));
+    ($x:ident[$($g:tt)*]) => (ExpID::Var($x.into(), type_id_vec!(() $($g)*,)));
     ($x:ident$([$($g:tt)*])*($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x$([$($g)*])*)), Box::new(exp_id_tuple!(() $($p)*,))));
     (($($p:tt)*)) => (exp_id_tuple!(() $($p)*,));
 }
@@ -80,8 +80,10 @@ macro_rules! exp_id_tuple {
 
 macro_rules! pattern {
     ($v:ident: $($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*) => (Pattern::Var(stringify!($v).to_owned(), ttype!($($t)*$([$($g)*])*$(($($p)*))*)));
-    ($a:ident) => (Pattern::Atom(stringify!($a).to_owned()));
-    ($f:ident($($p:tt)*)) => (Pattern::Comp(stringify!($f).to_owned(), Box::new(pattern_tuple!(() $($p)*,))));
+    ($a:ident) => (Pattern::Atom(stringify!($a).to_owned(), vec![]));
+    ($a:ident[$($g:tt)*]) => (Pattern::Atom(stringify!($a).to_owned(), ttype_vec!(()$($g)*)));
+    ($f:ident($($p:tt)*)) => (Pattern::Comp(stringify!($f).to_owned(), vec![], Box::new(pattern_tuple!(() $($p)*,))));
+    ($f:ident[$($g:tt)*]($($p:tt)*)) => (Pattern::Comp(stringify!($f).to_owned(), ttype_vec!(()$($g)*), Box::new(pattern_tuple!(() $($p)*,))));
     (($($t:tt)*)) => (pattern_tuple!(() $($t)*,))
 }
 
@@ -93,8 +95,10 @@ macro_rules! pattern_tuple {
 
 macro_rules! pattern_id {
     (+$($t:ident)*$([$($g:tt)*])*$(($($p:tt)*))*) => (PatternID::Var(type_id!($($t)*$([$($g)*])*$(($($p)*))*)));
-    ($a:ident) => (PatternID::Atom($a));
-    ($f:ident($($p:tt)*)) => (PatternID::Comp($f, Box::new(pattern_id_tuple!(() $($p)*,))));
+    ($a:ident) => (PatternID::Atom($a, vec![]));
+    ($a:ident[$($g:tt)*]) => (PatternID::Atom($a, type_id_vec!(()$($g)*)));
+    ($f:ident($($p:tt)*)) => (PatternID::Comp($f, vec![], Box::new(pattern_id_tuple!(() $($p)*,))));
+    ($f:ident[$($g:tt)*]($($p:tt)*)) => (PatternID::Comp($f, type_id_vec!(()$($g)*), Box::new(pattern_id_tuple!(() $($p)*,))));
     (($($t:tt)*)) => (pattern_id_tuple!(() $($p)*,))
 }
 
@@ -117,26 +121,27 @@ macro_rules! tree {
 macro_rules! truth_ref {
     ($n:ident()) => (TruthRef::new(stringify!($n).to_owned(), vec![], None));
     ($n:ident($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), vec![], Some(exp_tuple!(() $($p)*,))));
+    ($n:ident[$($g:tt)*]($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), ttype_vec!(()$($g)*,), Some(exp_tuple!(() $($p)*,))));
 }
 
 macro_rules! proof {
     (match $($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))* {$($m:tt)*}) =>
         (Proof::Match(exp!($($x)*$([$($g)*])*$(($($p)*))*), proof_match!($($m)*)));
-    ($n:ident($($p:tt)*)$(~$fn:ident($($fp:tt)*)$([$($ft:tt)*])*)*$(.$($tn:ident($($tp:tt)*)$([$($tt:tt)*])*)~*)*) =>
-        (Proof::Sequence(truth_ref!($n($($p)*)), proof_sequence!(() $(~$fn($($fp)*)$([$($ft)*])*)*$(.$($tn($($tp)*)$([$($tt)*])*)~*)*)));
+    ($n:ident$([$($g:tt)*])*($($p:tt)*)$(~$fn:ident($($fp:tt)*)$([$($ft:tt)*])*)*$(.$($tn:ident($($tp:tt)*)$([$($tt:tt)*])*)~*)*) =>
+        (Proof::Sequence(truth_ref!($n$([$($g)*])*($($p)*)), proof_sequence!(() $(~$fn($($fp)*)$([$($ft)*])*)*$(.$($tn($($tp)*)$([$($tt)*])*)~*)*)));
 }
 
 macro_rules! proof_match {
-    ($($($px:ident):*$([$($pg:tt)*])*$(($($pp:tt)*))* => $($($an:ident($($ap:tt)*)$([$($at:tt)*])*)~*).*$({$($b:tt)*})*),*) =>
-        (vec![$((pattern!($($px):*$([$($pg)*])*$(($($pp)*))*), proof!($($($an($($ap)*)$([$($at)*])*)~*).*$({$($b)*})*))),*]);
+    ($($($px:ident):*$([$($pg:tt)*])*$(($($pp:tt)*))* => $($($an:ident$([$($ag:tt)*])*($($ap:tt)*)$([$($at:tt)*])*)~*).*$({$($b:tt)*})*),*) =>
+        (vec![$((pattern!($($px):*$([$($pg)*])*$(($($pp)*))*), proof!($($($an$([$($ag)*])*($($ap)*)$([$($at)*])*)~*).*$({$($b)*})*))),*]);
 }
 
 macro_rules! proof_sequence {
     (($($v:tt)*)) => (vec![$($v)*]);
-    (($($v:tt)*) .$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
-        (proof_sequence!(($($v)* (Direction::Forwards, truth_ref!($n($($p)*)), tree!([$($t)*])), ) $($rest)*));
-    (($($v:tt)*) ~$n:ident($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
-        (proof_sequence!(($($v)* (Direction::Backwards, truth_ref!($n($($p)*)), tree!([$($t)*])), ) $($rest)*));
+    (($($v:tt)*) .$n:ident$([$($g:tt)*])*($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
+        (proof_sequence!(($($v)* (Direction::Forwards, truth_ref!($n$([$($g)*])*($($p)*)), tree!([$($t)*])), ) $($rest)*));
+    (($($v:tt)*) ~$n:ident$([$($g:tt)*])*($($p:tt)*)[$($t:tt)*]$($rest:tt)*) =>
+        (proof_sequence!(($($v)* (Direction::Backwards, truth_ref!($n$([$($g)*])*($($p)*)), tree!([$($t)*])), ) $($rest)*));
 }
 
 macro_rules! element {

@@ -9,7 +9,7 @@ fn deref() {
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     let e_id = exp_id!(TRUE_ID);
-    env.truth.add("a".to_owned(), TruthVal::new(e_id.clone()));
+    env.truth.add("a".to_owned(), TruthVal::new(e_id.clone(), 0));
     let p = proof!(a());
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(e_id));
@@ -22,7 +22,7 @@ fn replace_nothing() {
     alias_predef(&mut env);
     let e = exp!(forall((a: Bool) -> true));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("b".to_owned(), TruthVal::new(e_id));
+    env.truth.add("b".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(b(false));
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
@@ -35,7 +35,7 @@ fn replace() {
     alias_predef(&mut env);
     let e = exp!(forall((a: Bool) -> a));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("b".to_owned(), TruthVal::new(e_id));
+    env.truth.add("b".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(b(false));
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
@@ -49,7 +49,7 @@ fn unwraping_var() {
     env.exp.add("x".to_owned(), ExpVal::new(exp_id!(TRUE_ID), type_id!(BOOL_ID), 0));
     let e = exp!(forall((a: Bool) -> x));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("b".to_owned(), TruthVal::new(e_id));
+    env.truth.add("b".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(b(false)~wrap(x)[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
@@ -67,7 +67,7 @@ fn unwraping_match() {
         (false, false) => false
     }(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("m".to_owned(), TruthVal::new(e_id));
+    env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(m()~wrap({
         (true, true) => true,
         (true, false) => false,
@@ -85,7 +85,7 @@ fn unwraping_lambda_call() {
     alias_predef(&mut env);
     let e = exp!(((a: Bool, b: Bool) -> b)(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("m".to_owned(), TruthVal::new(e_id));
+    env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(m()~wrap(((a: Bool, b: Bool) -> b)(true, false))[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
@@ -99,7 +99,7 @@ fn unwraping_function_call() {
     element!(fn f(a: Bool, b: Bool) = b).define(&mut env).unwrap();
     let e = exp!(f(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("m".to_owned(), TruthVal::new(e_id));
+    env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(m()~wrap(f(true, false))[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
@@ -116,7 +116,7 @@ fn match_proof() {
         false => false
     }(x));
     let e_id = e.to_id(&env.local()).unwrap();
-    env.truth.add("m".to_owned(), TruthVal::new(e_id));
+    env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(
         match x {
             true => m().match(x)[0]~wrap({ true => true, false => false }(true))[]~match(x)[],
@@ -125,4 +125,14 @@ fn match_proof() {
     );
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(x)));
+}
+
+#[test]
+fn id_call() {
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    alias_predef(&mut env);
+    let p = proof!(ID[Bool](true));
+    let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
+    assert_eq!(re, Ok(exp_id!(EQ_ID[BOOL_ID](TRUE_ID, TRUE_ID))));
 }

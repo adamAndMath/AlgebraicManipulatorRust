@@ -16,7 +16,7 @@ impl ToID for Type {
                 let id = env.ty.get_id(t).map_err(ErrAst::UnknownType)?;
                 let ty = env.ty.get(id)?;
                 if ty.gen().len() != gs.len() {
-                    return Err(ErrAst::ErrID(ErrID::GenericAmount(id, ty.gen().clone())))
+                    return Err(ErrAst::ErrID(ErrID::GenericAmount(gs.len(), ty.gen().len())))
                 }
                 TypeID::Gen(id, ty.gen().into_iter().cloned().zip(gs.to_id(env)?).collect())
             },

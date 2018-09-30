@@ -15,7 +15,7 @@ pub enum Exp {
 impl TypeCheck for Exp {
     fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
-            Exp::Var(x, gs) => env.exp.get(*x)?.ty(),
+            Exp::Var(x, gs) => env.exp.get(*x)?.ty(gs),
             Exp::Tuple(v) => Type::Tuple(v.type_check(env)?),
             Exp::Closure(v) => {
                 let mut re: Option<Type> = None;
@@ -53,7 +53,7 @@ impl PushLocal<TypeVal> for Exp {
             Exp::Call(f, e) => Exp::Call(f.push_local_with_min(p, min, amount), e.push_local_with_min(p, min, amount)),
         }
     }
-    }
+}
 
 impl SetLocal for Exp {
     fn set_with_min(&self, min: usize, par: &[Self]) -> Self {
@@ -83,8 +83,8 @@ impl SetLocal<Type> for Exp {
             Exp::Closure(v) => Exp::Closure(v.set_with_min(min, par)),
             Exp::Call(f, e) => Exp::Call(f.set_with_min(min, par), e.set_with_min(min, par)),
         }
-        }
     }
+}
 
 impl Exp {
     pub fn apply<E, F: Fn(&Self, usize) -> Result<Self, E>>(&self, path: &Tree, i: usize, f: &F) -> Result<Self, Result<E, Tree>> {

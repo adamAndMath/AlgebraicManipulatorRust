@@ -71,11 +71,11 @@ impl TruthRef {
                             let par = par.push_local(PhantomData::<ExpVal>, i);
                             if *e == par {
                                 match e {
-                                    Exp::Var(id, _) => env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id)).map(|e|e.push_local(PhantomData::<ExpVal>, i)),
+                                    Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs).map(|e|e.push_local(PhantomData::<ExpVal>, i)),
                                     Exp::Call(box f, box arg) =>
                                         match f {
                                             Exp::Var(id, gs) =>
-                                                match env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id))? {
+                                                match env.exp.get(*id)?.val(*id, gs)? {
                                                     Exp::Closure(v) => v,
                                                     _ => unimplemented!(),
                                                 },

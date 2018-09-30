@@ -11,7 +11,7 @@ pub enum ErrID {
     UnknownTruthID(LocalID<TruthVal>),
     ExpMismatch(Exp, Exp),
     TypeMismatch(Type, Type),
-    GenericAmount(LocalID<TypeVal>, Vec<Variance>),
+    GenericAmount(usize, usize),
     InvalidArguments(Vec<Exp>),
     NotAtomic(LocalID<ExpVal>, Type),
     IlegalPath(Tree),

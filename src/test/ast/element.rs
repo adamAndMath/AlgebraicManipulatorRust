@@ -88,8 +88,8 @@ fn func() {
             }
         ).to_id(&env).expect("Failed to build lambda");
 
-        assert_eq!(add.val().expect("No expresion in add"), exp);
-        assert_eq!(add.ty(), ttype!(fn[(Nat, Nat), Nat]).to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
+        assert_eq!(add.val(add_id, &[]).expect("No expresion in add"), exp);
+        assert_eq!(add.ty(&[]), ttype!(fn[(Nat, Nat), Nat]).to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
     }
     
     assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+1, lens.2));

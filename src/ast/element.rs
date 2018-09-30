@@ -120,7 +120,7 @@ impl Element {
                     }
                 };
 
-                env.truth.add(n.to_owned(), TruthVal::new(proof));
+                env.truth.add(n.to_owned(), TruthVal::new(proof, gs.len()));
             }
         }
 

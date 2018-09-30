@@ -34,8 +34,8 @@ fn main() {
 
         proof DoubleNegative(b: Bool) {
             match b {
-                true => ID(not(not(true)))~wrap()[1,0]~wrap()[1]~match(b)[0,0,0|1],
-                false => ID(not(not(false)))~wrap()[1,0]~wrap()[1]~match(b)[0,0,0|1]
+                true => ID[Bool](not(not(true)))~wrap(not(true))[1,0]~wrap(not(false))[1]~match(b)[0,0,0|1],
+                false => ID[Bool](not(not(false)))~wrap(not(false))[1,0]~wrap(not(true))[1]~match(b)[0,0,0|1]
             }
         }
 
@@ -55,41 +55,41 @@ fn main() {
 
         proof And_Commutative(a: Bool, b: Bool) {
             match (a, b) {
-                (true, true) => ID(and(true, true))~match(a)[0,0|1,1]~match(b)[0,1|1,0],
-                (true, false) => ID(and(true, false))~wrap()[1].wrap(and(false, true))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
-                (false, true) => ID(and(false, true))~wrap()[1].wrap(and(true, false))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
-                (false, false) => ID(and(false, false))~match(a)[0,0|1,1]~match(b)[0,1|1,0]
+                (true, true) => ID[Bool](and(true, true))~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (true, false) => ID[Bool](and(true, false))~wrap(and(true, false))[1].wrap(and(false, true))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (false, true) => ID[Bool](and(false, true))~wrap(and(false, true))[1].wrap(and(true, false))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (false, false) => ID[Bool](and(false, false))~match(a)[0,0|1,1]~match(b)[0,1|1,0]
             }
         }
 
         proof And_NeutralElement_Left(b: Bool) {
             match b {
-                true => ID(and(true, true))~wrap()[1]~match(b)[0,1|1],
-                false => ID(and(true, false))~wrap()[1]~match(b)[0,1|1]
+                true => ID[Bool](and(true, true))~wrap(and(true, true))[1]~match(b)[0,1|1],
+                false => ID[Bool](and(true, false))~wrap(and(true, false))[1]~match(b)[0,1|1]
             }
         }
 
         proof And_NeutralElement_Right(b: Bool) {
-            ID(and(b, true)).And_Commutative(b, true)[1].And_NeutralElement_Left(b)[1]
+            ID[Bool](and(b, true)).And_Commutative(b, true)[1].And_NeutralElement_Left(b)[1]
         }
 
         proof And_AbsorbativeElement_Left(b: Bool) {
             match b {
-                true => ID(and(false, b)).match()[1,1]~wrap()[1],
-                false => ID(and(false, b)).match()[1,1]~wrap()[1]
+                true => ID[Bool](and(false, b)).match(b)[1,1]~wrap(and(false, true))[1],
+                false => ID[Bool](and(false, b)).match(b)[1,1]~wrap(and(false, false))[1]
             }
         }
 
         proof And_AbsorbativeElement_Right(b: Bool) {
-            ID(and(b, false)).And_Commutative(b, false)[1].And_AbsorbativeElement_Left(b)[1]
+            ID[Bool](and(b, false)).And_Commutative(b, false)[1].And_AbsorbativeElement_Left(b)[1]
         }
 
         proof And_Associative(a: Bool, b: Bool, c: Bool) {
             match b {
-                true => ID(and(and(a, true), c))
+                true => ID[Bool](and(and(a, true), c))
                             .And_NeutralElement_Right(a)[1,0]
                             ~And_NeutralElement_Left(c)[1,1],
-                false => ID(and(and(a, false), c))
+                false => ID[Bool](and(and(a, false), c))
                             .And_AbsorbativeElement_Right(a)[1,0]
                             .And_NeutralElement_Left(c)[1]
                             ~And_AbsorbativeElement_Right(a)[1]
