@@ -42,17 +42,17 @@ pub enum RefType {
 pub struct TruthRef {
     id: RefType,
     gen: Vec<Type>,
-    par: Vec<Exp>,
+    par: Option<Exp>,
 }
 
 impl TruthRef {
-    pub fn new(id: RefType, gen: Vec<Type>, par: Vec<Exp>) -> Self {
+    pub fn new(id: RefType, gen: Vec<Type>, par: Option<Exp>) -> Self {
         TruthRef { id, gen, par }
     }
 
     pub fn get(&self, env: &LocalEnvs) -> Result<Exp, ErrID> {
         match self.id {
-            RefType::Ref(id) => env.truth.get(id)?.get(self.gen.clone(), self.par.clone()).ok_or(ErrID::InvalidArguments(self.par.clone())),
+            RefType::Ref(id) => env.truth.get(id)?.get(self.gen.clone(), self.par.clone(), env),
             RefType::Wrap => unimplemented!(),
             RefType::Match => unimplemented!(),
         }
@@ -61,8 +61,7 @@ impl TruthRef {
     pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         match self.id {
             RefType::Wrap => {
-                if self.par.len() != 1 { return Err(ErrID::ArgumentAmount(self.id, 1)); }
-                let par = &self.par[0];
+                let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
 
                 match dir {
                     Direction::Forwards => unimplemented!(),
@@ -72,18 +71,19 @@ impl TruthRef {
                             if *e == par {
                                 match e {
                                     Exp::Var(id, _) => env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id)).map(|e|e.push_local(i)),
-                                    Exp::Call(box Exp::Lambda(p, f), box arg) => p.match_exp(arg.clone(), env).map(|v|f.set(&v)),
-                                    Exp::Call(box Exp::Var(id, gs), box arg) => {
-                                        match env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id))? {
-                                            Exp::Lambda(p, f) => p.match_exp(arg.clone(), env).map(|v|f.set(&v)),
+                                    Exp::Call(box f, box arg) =>
+                                        match f {
+                                            Exp::Var(id, gs) =>
+                                                match env.exp.get(*id)?.val().ok_or(ErrID::VarNotSet(*id))? {
+                                                    Exp::Closure(v) => v,
+                                                    _ => unimplemented!(),
+                                                },
+                                            Exp::Closure(v) => v.clone(),
                                             _ => unimplemented!(),
-                                        }
-                                    },
-                                    Exp::Match(box e, v) =>
-                                        v.into_iter()
-                                            .filter_map(|(p,a)|{let v = p.match_exp(e.clone(), env).ok()?; Some(a.set(&v))})
+                                        }.into_iter()
+                                            .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
                                             .next()
-                                            .ok_or(ErrID::NoMatch(e.clone())),
+                                            .ok_or(ErrID::NoMatch(arg.clone())),
                                     _ => unimplemented!(),
                                 }
                             } else {
@@ -94,9 +94,8 @@ impl TruthRef {
                 }
             },
             RefType::Match => {
-                if self.par.len() != 1 { return Err(ErrID::ArgumentAmount(self.id, 1)); }
-                let par = &self.par[0];
-                let res = &match_env.get(par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
+                let res = &match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
                 let (par, res) = match dir {
                     Direction::Forwards => (par, res),
                     Direction::Backwards => (res, par),

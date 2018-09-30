@@ -1,4 +1,4 @@
-#![feature(range_contains, box_patterns)]
+#![feature(range_contains, box_patterns, transpose_result)]
 
 mod env;
 mod envs;
@@ -27,10 +27,10 @@ fn main() {
     alias_predef(&mut env);
 
     script! {env,
-        fn not(b: Bool) = match(b, {
+        fn not {
             true => false,
             false => true
-        });
+        }
 
         proof DoubleNegative(b: Bool) {
             match b {
@@ -39,19 +39,19 @@ fn main() {
             }
         }
 
-        fn and(a: Bool, b: Bool) = match((a, b), {
+        fn and {
             (true, true) => true,
             (true, false) => false,
             (false, true) => false,
             (false, false) => false
-        });
+        }
 
-        fn or(a: Bool, b: Bool) = match((a, b), {
+        fn or {
             (true, true) => true,
             (true, false) => true,
             (false, true) => true,
             (false, false) => false
-        });
+        }
 
         proof And_Commutative(a: Bool, b: Bool) {
             match (a, b) {
@@ -102,40 +102,40 @@ fn main() {
             Succ(Nat)
         }
 
-        fn add(a: Nat, b: Nat) -> Nat = match(b, {
-            Zero => a,
-            Succ(p: Nat) => Succ(add(a, p))
-        });
+        fn add -> Nat {
+            (a: Nat, Zero) => a,
+            (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+        }
 
-        fn mul(a: Nat, b: Nat) -> Nat = match(b, {
-            Zero => Zero,
-            Succ(p: Nat) => add(mul(a, p), a)
-        });
+        fn mul -> Nat {
+            (a: Nat, Zero) => Zero,
+            (a: Nat, Succ(p: Nat)) => add(mul(a, p), a)
+        }
 
-        fn pow(a: Nat, b: Nat) -> Nat = match(b, {
-            Zero => Succ(Zero),
-            Succ(p: Nat) => mul(pow(a, p), a)
-        });
+        fn pow -> Nat {
+            (a: Nat, Zero) => Succ(Zero),
+            (a: Nat, Succ(p: Nat)) => mul(pow(a, p), a)
+        }
 
         enum IntP {
             One,
             Succ(IntP)
         }
 
-        fn add(a: IntP, b: IntP) -> IntP = match(b, {
-            One => Succ(a),
-            Succ(p: IntP) => Succ(add(a, p))
-        });
+        fn add -> IntP {
+            (a: IntP, One) => Succ(a),
+            (a: IntP, Succ(p: IntP)) => Succ(add(a, p))
+        }
 
-        fn mul(a: IntP, b: IntP) -> IntP = match(b, {
-            One => a,
-            Succ(p: IntP) => add(mul(a, p), a)
-        });
+        fn mul -> IntP {
+            (a: IntP, One) => a,
+            (a: IntP, Succ(p: IntP)) => add(mul(a, p), a)
+        }
 
-        fn pow(a: IntP, b: IntP) -> IntP = match(b, {
-            One => a,
-            Succ(p: IntP) => mul(pow(a, p), a)
-        });
+        fn pow -> IntP {
+            (a: IntP, One) => a,
+            (a: IntP, Succ(p: IntP)) => mul(pow(a, p), a)
+        }
 
         enum Int {
             Zero,

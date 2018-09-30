@@ -72,20 +72,20 @@ fn func() {
         env.ty.alias("fn".to_owned(), FN_ID);
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
         element!(
-            fn add(a: Nat, b: Nat) -> Nat = match(b, {
-                Zero => a,
-                Succ(p: Nat) => Succ(add(a, p))
-            })
+            fn add -> Nat {
+                (a: Nat, Zero) => a,
+                (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+            }
         ).define(&mut env).expect("Failed to define add");
 
         let env = env.local();
         let add_id = env.exp.get_id("add").expect("add has not been named");
         let add = env.exp.get(add_id).expect("add has not been added to the environment");
         let exp = exp!(
-            (a: Nat, b: Nat) -> match(b, {
-                Zero => a,
-                Succ(p: Nat) => Succ(add(a, p))
-            })
+            {
+                (a: Nat, Zero) => a,
+                (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+            }
         ).to_id(&env).expect("Failed to build lambda");
 
         assert_eq!(add.val().expect("No expresion in add"), exp);
@@ -101,5 +101,5 @@ fn lists() {
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     
     element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
-    element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
+   //element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
 }

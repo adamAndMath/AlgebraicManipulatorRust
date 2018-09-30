@@ -7,9 +7,8 @@ use tree::{Tree, TreeChar };
 pub enum Exp {
     Var(LocalID<ExpVal>, Vec<Type>),
     Tuple(Vec<Exp>),
-    Lambda(Pattern, Box<Exp>),
+    Closure(Vec<(Pattern, Exp)>),
     Call(Box<Exp>, Box<Exp>),
-    Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
 
 impl TypeCheck for Exp {
@@ -17,21 +16,18 @@ impl TypeCheck for Exp {
         Ok(match self {
             Exp::Var(x, gs) => env.exp.get(*x)?.ty(),
             Exp::Tuple(v) => Type::Tuple(v.type_check(env)?),
-            Exp::Lambda(p, e) => (p, e).type_check(env)?,
-            Exp::Call(f, e) => f.type_check(env)?.call_output(&e.type_check(env)?)?,
-            Exp::Match(e, ps) => {
-                let e = e.type_check(env)?;
-                let mut op: Option<Type> = None;
-                for p in ps.type_check(env)? {
-                    let t = p.call_output(&e)?;
-                    if let Some(ref ty) = op {
+            Exp::Closure(v) => {
+                let mut re: Option<Type> = None;
+                for t in v.type_check(env)? {
+                    if let Some(ref ty) = re {
                         if t != *ty { return Err(ErrID::TypeMismatch(t, ty.clone())) }
                     } else {
-                        op = Some(t)
+                        re = Some(t)
                     }
                 }
-                op.unwrap()
+                re.unwrap()
             },
+            Exp::Call(f, e) => f.type_check(env)?.call_output(&e.type_check(env)?)?,
         })
     }
 }
@@ -41,9 +37,8 @@ impl PushLocal for Exp {
         match self {
             Exp::Var(id, ty) => Exp::Var(id.push_local_with_min(min, amount), ty.clone()),
             Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(min, amount)),
-            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), e.push_local_with_min(min + p.bounds(), amount)),
+            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(min, amount)),
             Exp::Call(f, e) => Exp::Call(f.push_local_with_min(min, amount), e.push_local_with_min(min, amount)),
-            Exp::Match(e, v) => Exp::Match(e.push_local_with_min(min, amount), v.push_local_with_min(min, amount)),
         }
     }
 }
@@ -66,9 +61,8 @@ impl Exp {
             },
             Exp::Var(id, ty) => Exp::Var(*id, ty.clone()),
             Exp::Tuple(v) => Exp::Tuple(v.into_iter().map(|e|e.set_with_min(min, par)).collect()),
-            Exp::Lambda(p, e) => Exp::Lambda(p.clone(), Box::new(e.set_with_min(min + p.bounds(), par))),
+            Exp::Closure(v) => Exp::Closure(v.into_iter().map(|(p, e)|(p.clone(), e.set_with_min(min + p.bounds(), par))).collect()),
             Exp::Call(f, e) => Exp::Call(Box::new(f.set_with_min(min, par)), Box::new(e.set_with_min(min, par))),
-            Exp::Match(e, v) => Exp::Match(Box::new(e.set_with_min(min, par)), v.into_iter().map(|(p, e)|(p.clone(), e.set_with_min(min + p.bounds(), par))).collect()),
         }
     }
 
@@ -88,15 +82,15 @@ impl Exp {
                         }
                     ).collect::<Result<_,_>>()?)
                 },
-                Exp::Lambda(p, e) => {
-                    path.is_within(0..1, &[]).map_err(Err)?;
+                Exp::Closure(v) => {
+                    path.is_within(0..v.len(), &[]).map_err(Err)?;
 
-                    Exp::Lambda(p.clone(), Box::new(
-                        match path.get(0) {
-                            Some(path) => e.apply(path, i + p.bounds(), f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
-                            None => unreachable!(),
+                    Exp::Closure(v.into_iter().enumerate().map(|(i, (p, e))|
+                        match path.get(i) {
+                            Some(path) => e.apply(path, i, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            None => Ok((p.clone(), e.clone())),
                         }
-                    ))
+                    ).collect::<Result<_,_>>()?)
                 },
                 Exp::Call(e1, box e2) => {
                     Exp::Call(
@@ -134,22 +128,6 @@ impl Exp {
                         )
                     )
                 },
-                Exp::Match(e, v) => {
-                    path.is_within(0..v.len(), &[TreeChar::Func]).map_err(Err)?;
-
-                    Exp::Match(
-                        match path.get(TreeChar::Func) {
-                            Some(p) => Box::new(e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?),
-                            None => e.clone(),
-                        },
-                        v.into_iter().enumerate().map(|(i, (p, e))|
-                            match path.get(i) {
-                                Some(path) => e.apply(path, i, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
-                                None => Ok((p.clone(), e.clone())),
-                            }
-                        ).collect::<Result<_,_>>()?
-                    )
-                }
             })
         }
     }

@@ -6,9 +6,8 @@ use super::{ Type, Pattern, ErrAst, ToID };
 pub enum Exp {
     Var(String, Vec<Type>),
     Tuple(Vec<Exp>),
-    Lambda(Pattern, Box<Exp>),
+    Closure(Vec<(Pattern, Exp)>),
     Call(Box<Exp>, Box<Exp>),
-    Match(Box<Exp>, Vec<(Pattern, Exp)>),
 }
 
 impl ToID for Exp {
@@ -17,12 +16,8 @@ impl ToID for Exp {
         Ok(match self {
             Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x).map_err(ErrAst::UnknownVar)?, gs.to_id(env)?),
             Exp::Tuple(v) => ExpID::Tuple(v.to_id(env)?),
-            Exp::Lambda(p, e) => {
-                let (p, e) = (p, e).to_id(env)?;
-                ExpID::Lambda(p, e)
-            },
+            Exp::Closure(v) => ExpID::Closure(v.to_id(env)?),
             Exp::Call(f, e) => ExpID::Call(f.to_id(env)?, e.to_id(env)?),
-            Exp::Match(e, ps) => ExpID::Match(e.to_id(env)?, ps.to_id(env)?),
         })
     }
 }

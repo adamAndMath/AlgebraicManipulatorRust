@@ -42,9 +42,8 @@ macro_rules! type_id_tuple {
 macro_rules! exp {
     ($x:ident) => (Exp::Var(stringify!($x).to_owned(), vec![]));
     ($x:ident[$($g:tt)*]) => (Exp::Var(stringify!($x).to_owned(), ttype_vec!(() $($g)*,)));
-    (match($($x:ident)*$([$($g:tt)*])*$(($($p:tt)*))*, {$($m:tt)*})) =>
-        (Exp::Match(Box::new(exp!($($x)*$([$($g)*])*$(($($p)*))*)), exp_match!($($m)*)));
-    ($($x:ident):*$(($($p:tt)*))* -> $($rest:tt)*) => (Exp::Lambda(pattern!($($x):*$(($($p)*))*), Box::new(exp!($($rest)*))));
+    ({$($m:tt)*}$(($($p:tt)*))*) => (exp_call!((Exp::Closure(exp_match!($($m)*))), $(($($p)*))*));
+    ($($x:ident):*$(($($p:tt)*))* -> $($rest:tt)*) => (Exp::Closure(vec![(pattern!($($x):*$(($($p)*))*), exp!($($rest)*))]));
     ($x:ident$([$($g:tt)*])*$(($($p:tt)*))+) => (exp_call!((exp!($x$([$($g)*])*)), $(($($p)*))+));
     (($($t:tt)*)$(($($p:tt)*))*) => (exp_call!((exp_tuple!(() $($t)*,)), $(($($p)*))*));
 }
@@ -59,17 +58,11 @@ macro_rules! exp_match {
         (vec![$((pattern!($($px)*$(($($pp)*))*), exp!($($ex)*$([$($eg)*])*$(($($ep)*))*))),*]);
 }
 
-macro_rules! exp_vec {
-    () => (vec![]);
-    ($($($($x:ident):*$([$($g:tt)*])*$(($($p:tt)*))*)->*),*) =>
-        (vec![$(exp!($($($x):*$([$($g)*])*$(($($p)*))*)->+)),*]);
-}
-
 macro_rules! exp_tuple {
     ((exp!($($e:tt)*), )$(,)* ) => (exp!($($e)*));
     (($($v:tt)*)$(,)* ) => (Exp::Tuple(vec!($($v)*)));
-    (($($v:tt)*) $($($x:ident):*$([$($g:tt)*])*$(($($p:tt)*))*)->*, $($rest:tt)*) =>
-        (exp_tuple!(($($v)* exp!($($($x)*$([$($g)*])*$(($($p)*))*)->*), ) $($rest)*));
+    (($($v:tt)*) $($({$($m:tt)*})*$($x:ident):*$([$($g:tt)*])*$(($($p:tt)*))*)->*, $($rest:tt)*) =>
+        (exp_tuple!(($($v)* exp!($($({$($m)*})*$($x)*$([$($g)*])*$(($($p)*))*)->*), ) $($rest)*));
 }
 
 macro_rules! exp_id {
@@ -122,7 +115,8 @@ macro_rules! tree {
 }
 
 macro_rules! truth_ref {
-    ($n:ident($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), vec![], exp_vec!($($p)*)));
+    ($n:ident()) => (TruthRef::new(stringify!($n).to_owned(), vec![], None));
+    ($n:ident($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), vec![], Some(exp_tuple!(() $($p)*,))));
 }
 
 macro_rules! proof {
@@ -166,13 +160,21 @@ macro_rules! element {
     (let $n:ident[$($g:tt)*]: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))* = $($e:tt)*) =>
         (Element::Let(stringify!($n).to_owned(), element_gen!(() $($g)*,), Some(ttype!($($t)*$([$($gs)*])*$(($($ps)*))*)), exp!($($e)*)));
     (fn $n:ident($($p:tt)*) = $($rest:tt)*) =>
-        (Element::Func(stringify!($n).to_owned(), vec![], element_par!($($p)*), None, exp!($($rest)*)));
+        (Element::Func(stringify!($n).to_owned(), vec![], None, vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
     (fn $n:ident[$($g:ident),*]($($p:tt)*) = $($rest:tt)*) =>
-        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), None, exp!($($rest)*)));
+        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], None, vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
     (fn $n:ident($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
-        (Element::Func(stringify!($n).to_owned(), vec![], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
+        (Element::Func(stringify!($n).to_owned(), vec![], Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
     (fn $n:ident[$($g:ident),*]($($p:tt)*) -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* = $($rest:tt)*) =>
-        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp!($($rest)*)));
+        (Element::Func(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![$(stringify!($g).to_owned()),*], vec![(pattern_tuple!(()$($p)*,), exp!($($rest)*))]));
+    (fn $n:ident {$($m:tt)*}) =>
+        (Element::Func(stringify!($n).to_owned(), vec![], None, exp_match!($($m)*)));
+    (fn $n:ident[$($g:ident),*] {$($m:tt)*}) =>
+        (Element::Func(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], None, exp_match!($($m)*)));
+    (fn $n:ident -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* {$($m:tt)*}) =>
+        (Element::Func(stringify!($n).to_owned(), vec![], Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), exp_match!($($m)*)));
+    (fn $n:ident[$($g:ident),*] -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* {$($m:tt)*}) =>
+        (Element::Func(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![$(stringify!($g).to_owned()),*], exp_match!($($m)*)));
     (proof $n:ident{ $($proof:tt)* }) =>
         (Element::Proof(stringify!($n).to_owned(), vec![], vec![], proof!($($proof)*)));
     (proof $n:ident[$($g:ident),*]{ $($proof:tt)* }) =>
@@ -210,12 +212,16 @@ macro_rules! script {
         element!(enum $n$([$($g)*])*{$($v)*}).define(&mut $env).unwrap();
         script!($env, $($rest)*);
     };
-    ($env:ident, let $n:ident$([$($g:tt)*])*$(: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
-        element!(let $n$([$($g)*])*$(: $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+    ($env:ident, let $n:ident$([$($g:tt)*])*$(: $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($({$($em:tt)*})*$($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
+        element!(let $n$([$($g)*])*$(: $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($({$($em)*})*$($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
         script!($env, $($rest)*);
     };
-    ($env:ident, fn $n:ident$([$($g:tt)*])*($($p:tt)*)$(-> $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
-        element!(fn $n$([$($g)*])*($($p)*)$(-> $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+    ($env:ident, fn $n:ident$([$($g:tt)*])*($($p:tt)*)$(-> $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* = $($({$($em:tt)*})*$($ex:ident):*$([$($eg:tt)*])*$(($($ep:tt)*))*)->*; $($rest:tt)*) => {
+        element!(fn $n$([$($g)*])*($($p)*)$(-> $($t)*$([$($gs)*])*$(($($ps)*))*)* = $($({$($em)*})*$($ex)*$([$($eg)*])*$(($($ep)*))*)->*).define(&mut $env).unwrap();
+        script!($env, $($rest)*);
+    };
+    ($env:ident, fn $n:ident$([$($g:tt)*])*$(-> $($t:ident)*$([$($gs:tt)*])*$(($($ps:tt)*))*)* {$($m:tt)*} $($rest:tt)*) => {
+        element!(fn $n$([$($g)*])*$(-> $($t)*$([$($gs)*])*$(($($ps)*))*)* {$($m)*}).define(&mut $env).unwrap();
         script!($env, $($rest)*);
     };
     ($env:ident, proof $n:ident$([$($g:tt)*])*$(($($p:tt)*))*{$($proof:tt)*} $($rest:tt)*) => {

@@ -1,7 +1,7 @@
 use predef::*;
 use envs::*;
 use env::LocalID;
-use super::{ Type, Exp, Proof, ErrAst, ToID };
+use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
 use variance::Variance::{ self, * };
 use id::renamed::{ TypeID, PatternID, ExpID, MatchEnv, ErrID, TypeCheck };
 
@@ -24,7 +24,7 @@ pub enum Element {
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
     Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
-    Func(String, Vec<String>, Vec<Par>, Option<Type>, Exp),
+    Func(String, Vec<String>, Option<Type>, Vec<(Pattern, Exp)>),
     Proof(String, Vec<String>, Vec<Par>, Proof),
 }
 
@@ -76,43 +76,42 @@ impl Element {
                 }
                 env.exp.add(n.clone(), ExpVal::new(e_id, e_ty, gs.len()));
             },
-            Element::Func(n, gs, ps, None, e) => {
+            Element::Func(n, gs, None, ps) => {
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect());
-                    let ps = ps.to_id(&env)?;
-                    let ts = ps.iter().map(|(_,e)|PatternID::Var(e.ty())).collect::<Vec<_>>();
-                    let env = env.scope(ps);
-                    let e_id = e.to_id(&env)?;
-                    let e_ty = e_id.type_check(&env)?;
-                    let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
-                    let t = TypeID::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(&env)?), (Covariant, e_ty)]);
-                    ExpVal::new(ExpID::Lambda(p, Box::new(e_id)), t, gs.len())
+                    let e = ExpID::Closure(ps.to_id(&env)?);
+                    let t = e.type_check(&env)?;
+                    ExpVal::new(e, t, gs.len())
                 };
 
                 env.exp.add(n.clone(), f);
             },
-            Element::Func(n, gs, ps, Some(re), e) => {
+            Element::Func(n, gs, Some(re), ps) => {
                 let gs: Vec<_> = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
-                let (re, p, t) = {
+                let t = {
                     let env = env.local();
                     let env = env.scope_ty(gs.clone());
                     let re = re.to_id(&env)?;
-                    let ts = ps.iter().map(|Par(_,t)|Ok(PatternID::Var(t.to_id(&env)?))).collect::<Result<Vec<_>,ErrAst>>()?;
-                    let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
-                    let t = TypeID::Gen(FN_ID.into(), vec![(Contravariant, p.type_check(&env)?), (Covariant, re.clone())]);
-                    (re, p, t)
+                    let mut t_in = None;
+                    for (p,_) in ps {
+                        let t = p.to_id(&env)?.type_check(&env)?;
+                        if let Some(ref t_in) = t_in {
+                            if t != *t_in { return Err(ErrAst::ErrID(ErrID::TypeMismatch(t, t_in.clone()))); }
+                        } else {
+                            t_in = Some(t)
+                        }
+                    }
+                    func(t_in.unwrap(), re)
                 };
                 let id = env.exp.add(n.clone(), ExpVal::new_empty(t.clone(), gs.len()));
                 let f = {
                     let env = env.local();
                     let env = env.scope_ty(gs);
-                    let ps = ps.to_id(&env)?;
-                    let env = env.scope(ps);
-                    let e_id = e.to_id(&env)?;
-                    let e_ty = e_id.type_check(&env)?;
-                    if e_ty != re { return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, re))); }
-                    ExpID::Lambda(p, Box::new(e_id))
+                    let e = ExpID::Closure(ps.to_id(&env)?);
+                    let e_ty = e.type_check(&env)?;
+                    if e_ty != t { return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, t))); }
+                    e
                 };
 
                 env.exp.get_mut(id).unwrap().set_val(f);
@@ -131,7 +130,7 @@ impl Element {
                     } else {
                         let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
                         let t = p.type_check(&env)?;
-                        ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Lambda(p, Box::new(proof))))
+                        ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Closure(vec![(p, proof)])))
                     }
                 };
 

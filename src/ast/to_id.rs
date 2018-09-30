@@ -13,6 +13,13 @@ impl<T: ToID> ToID for Box<T> {
     }
 }
 
+impl<T: ToID> ToID for Option<T> {
+    type To = Option<T::To>;
+    fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst> {
+        self.as_ref().map(|e|e.to_id(env)).transpose()
+    }
+}
+
 impl<T: ToID> ToID for Vec<T> {
     type To = Vec<T::To>;
     fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst> {

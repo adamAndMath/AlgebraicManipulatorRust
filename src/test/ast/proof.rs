@@ -60,20 +60,20 @@ fn unwraping_match() {
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     alias_predef(&mut env);
-    let e = exp!(match((true, false), {
+    let e = exp!({
         (true, true) => true,
         (true, false) => false,
         (false, true) => false,
         (false, false) => false
-    }));
+    }(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
-    let p = proof!(m()~wrap(match((true, false), {
+    let p = proof!(m()~wrap({
         (true, true) => true,
         (true, false) => false,
         (false, true) => false,
         (false, false) => false
-    }))[]);
+    }(true, false))[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
@@ -111,16 +111,16 @@ fn match_proof() {
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     alias_predef(&mut env);
     let x = env.exp.add("x".to_owned(), ExpVal::new_empty(type_id!(BOOL_ID), 0));
-    let e = exp!(match(x, {
+    let e = exp!({
         true => true,
         false => false
-    }));
+    }(x));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id));
     let p = proof!(
         match x {
-            true => m().match(x)[f]~wrap(match(true, { true => true, false => false }))[]~match(x)[],
-            false => m().match(x)[f]~wrap(match(false, { true => true, false => false }))[]~match(x)[]
+            true => m().match(x)[0]~wrap({ true => true, false => false }(true))[]~match(x)[],
+            false => m().match(x)[0]~wrap({ true => true, false => false }(false))[]~match(x)[]
         }
     );
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
