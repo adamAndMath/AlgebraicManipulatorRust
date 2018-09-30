@@ -11,9 +11,9 @@ fn create_env_with_a_b_c() {
     let mut data = vec!["a", "b", "c"];
     let env = Env::new(&mut data);
 
-    assert_eq!(env.get(ID::new(0)), Ok((&"a")));
-    assert_eq!(env.get(ID::new(1)), Ok((&"b")));
-    assert_eq!(env.get(ID::new(2)), Ok((&"c")));
+    assert_eq!(env.get(ID::new(0)), Ok(&"a"));
+    assert_eq!(env.get(ID::new(1)), Ok(&"b"));
+    assert_eq!(env.get(ID::new(2)), Ok(&"c"));
 }
 
 #[test]
@@ -25,13 +25,13 @@ fn add_data_to_empty_env() {
         env.add("b".to_owned(), "2");
         env.add("c".to_owned(), "3");
 
-        assert_eq!(env.get_id("a"), Ok((ID::new(0))));
-        assert_eq!(env.get_id("b"), Ok((ID::new(1))));
-        assert_eq!(env.get_id("c"), Ok((ID::new(2))));
+        assert_eq!(env.get_id("a"), Ok(ID::new(0)));
+        assert_eq!(env.get_id("b"), Ok(ID::new(1)));
+        assert_eq!(env.get_id("c"), Ok(ID::new(2)));
 
-        assert_eq!(env.get(ID::new(0)), Ok((&"1")));
-        assert_eq!(env.get(ID::new(1)), Ok((&"2")));
-        assert_eq!(env.get(ID::new(2)), Ok((&"3")));
+        assert_eq!(env.get(ID::new(0)), Ok(&"1"));
+        assert_eq!(env.get(ID::new(1)), Ok(&"2"));
+        assert_eq!(env.get(ID::new(2)), Ok(&"3"));
     }
 
     assert_eq!(data[..], ["1", "2", "3"]);
@@ -49,18 +49,18 @@ fn add_data_in_and_after_scope() {
             {
                 let mut scope2 = scope1.scope();
                 scope2.add("x".to_owned(), "3rd");
-                assert_eq!(scope2.get_id("x").map(|id|scope2.get(id)), Ok(Ok((&"3rd"))));
-                assert_eq!(scope2.get_id("y").map(|id|scope2.get(id)), Ok(Ok((&"2nd"))));
+                assert_eq!(scope2.get_id("x").map(|id|scope2.get(id)), Ok(Ok(&"3rd")));
+                assert_eq!(scope2.get_id("y").map(|id|scope2.get(id)), Ok(Ok(&"2nd")));
             }
             scope1.add("y".to_owned(), "4th");
-            assert_eq!(scope1.get_id("x").map(|id|scope1.get(id)), Ok(Ok((&"1st"))));
-            assert_eq!(scope1.get_id("y").map(|id|scope1.get(id)), Ok(Ok((&"4th"))));
+            assert_eq!(scope1.get_id("x").map(|id|scope1.get(id)), Ok(Ok(&"1st")));
+            assert_eq!(scope1.get_id("y").map(|id|scope1.get(id)), Ok(Ok(&"4th")));
         }
         
         env.add("z".to_owned(), "5th");
-        assert_eq!(env.get_id("x").map(|id|env.get(id)), Ok(Ok((&"1st"))));
+        assert_eq!(env.get_id("x").map(|id|env.get(id)), Ok(Ok(&"1st")));
         assert_eq!(env.get_id("y"), Err("y".to_owned()));
-        assert_eq!(env.get_id("z").map(|id|env.get(id)), Ok(Ok((&"5th"))));
+        assert_eq!(env.get_id("z").map(|id|env.get(id)), Ok(Ok(&"5th")));
     }
 
     assert_eq!(data[..], ["Not named", "1st", "2nd", "3rd", "4th", "5th"]);

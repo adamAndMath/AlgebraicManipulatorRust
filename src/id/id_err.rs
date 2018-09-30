@@ -1,6 +1,5 @@
 use env::LocalID;
 use envs::{ ExpVal, TypeVal, TruthVal };
-use variance::Variance;
 use super::{ Type, Exp, RefType };
 use tree::Tree;
 
@@ -12,7 +11,6 @@ pub enum ErrID {
     ExpMismatch(Exp, Exp),
     TypeMismatch(Type, Type),
     GenericAmount(usize, usize),
-    InvalidArguments(Vec<Exp>),
     NotAtomic(LocalID<ExpVal>, Type),
     IlegalPath(Tree),
     ArgumentAmount(RefType, usize),

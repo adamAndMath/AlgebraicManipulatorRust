@@ -21,17 +21,17 @@ impl<T: ?Sized> LocalID<T> {
 }
 
 impl<T: ?Sized> PushLocal<T> for LocalID<T> {
-    fn push_local_with_min(&self, p: PhantomData<T>, min: usize, amount: usize) -> Self {
+    fn push_local_with_min(&self, _: PhantomData<T>, min: usize, amount: usize) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(*id),
-            LocalID::Local(id, p) => LocalID::Local(if *id >= min { id + amount } else { *id }, PhantomData),
+            LocalID::Local(id, p) => LocalID::Local(if *id >= min { id + amount } else { *id }, *p),
         }
     }
 
-    fn push_local(&self, p: PhantomData<T>, amount: usize) -> Self {
+    fn push_local(&self, _: PhantomData<T>, amount: usize) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(*id),
-            LocalID::Local(id, p) => LocalID::Local(id + amount, PhantomData),
+            LocalID::Local(id, p) => LocalID::Local(id + amount, *p),
         }
     }
 }
@@ -46,7 +46,7 @@ impl<T: ?Sized> Clone for LocalID<T> {
     fn clone(&self) -> Self {
         match self {
             LocalID::Global(id) => LocalID::Global(*id),
-            LocalID::Local(id, _) => LocalID::Local(*id, PhantomData),
+            LocalID::Local(id, p) => LocalID::Local(*id, *p),
         }
     }
 }
