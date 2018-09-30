@@ -3,29 +3,14 @@ use envs::*;
 use env::LocalID;
 use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
 use variance::Variance::{ self, * };
-use id::renamed::{ TypeID, PatternID, ExpID, MatchEnv, ErrID, TypeCheck };
-
-pub struct Par(String, Type);
-
-impl Par {
-    pub fn new(name: String, ty: Type) -> Self {
-        Par(name, ty)
-    }
-}
-
-impl ToID for Par {
-    type To = (String, ExpVal);
-    fn to_id(&self, env: &LocalEnvs) -> Result<(String, ExpVal), ErrAst> {
-        Ok((self.0.clone(), ExpVal::new_empty(self.1.to_id(env)?, 0)))
-    }
-}
+use id::renamed::{ TypeID, ExpID, MatchEnv, ErrID, TypeCheck };
 
 pub enum Element {
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
     Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
     Func(String, Vec<String>, Option<Type>, Vec<(Pattern, Exp)>),
-    Proof(String, Vec<String>, Vec<Par>, Proof),
+    Proof(String, Vec<String>, Option<Pattern>, Proof),
 }
 
 impl Element {
@@ -116,21 +101,22 @@ impl Element {
 
                 env.exp.get_mut(id).unwrap().set_val(f);
             },
-            Element::Proof(n, gs, ps, proof) => {
+            Element::Proof(n, gs, p, proof) => {
                 let proof = {
                     let env = env.local();
                     let gs = gs.into_iter().map(|g|(g.clone(), TypeVal::new(vec![]))).collect();
                     let env = env.scope_ty(gs);
-                    let ps = ps.to_id(&env)?;
-                    let ts = ps.iter().map(|(_,v)|PatternID::Var(v.ty())).collect::<Vec<_>>();
-                    let env = env.scope(ps);
-                    let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
-                    if ts.len() == 0 {
-                        proof
-                    } else {
-                        let p = if let [t] = &ts[..] {t.clone()} else {PatternID::Tuple(ts.clone())};
+                    
+                    if let Some(p) = p {
+                        let ps = p.bound();
+                        let p = p.to_id(&env)?;
+                        let ps = ps.into_iter().zip(p.bound()).collect();
+                        let env = env.scope(ps);
+                        let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
                         let t = p.type_check(&env)?;
                         ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Closure(vec![(p, proof)])))
+                    } else {
+                        proof.to_id(&env)?.execute(&env, &MatchEnv::new())?
                     }
                 };
 

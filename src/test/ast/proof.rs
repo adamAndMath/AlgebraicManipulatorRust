@@ -2,7 +2,7 @@ use predef::*;
 use envs::*;
 use ast::*;
 use id::renamed::*;
-use tree::{ Tree, TreeChar };
+use tree::Tree;
 
 #[test]
 fn deref() {

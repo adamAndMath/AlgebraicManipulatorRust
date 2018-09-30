@@ -176,13 +176,13 @@ macro_rules! element {
     (fn $n:ident[$($g:ident),*] -> $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))* {$($m:tt)*}) =>
         (Element::Func(stringify!($n).to_owned(), Some(ttype!($($t)*$([$($tg)*])*$(($($tp)*))*)), vec![$(stringify!($g).to_owned()),*], exp_match!($($m)*)));
     (proof $n:ident{ $($proof:tt)* }) =>
-        (Element::Proof(stringify!($n).to_owned(), vec![], vec![], proof!($($proof)*)));
+        (Element::Proof(stringify!($n).to_owned(), vec![], None, proof!($($proof)*)));
     (proof $n:ident[$($g:ident),*]{ $($proof:tt)* }) =>
-        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], vec![], proof!($($proof)*)));
+        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], None, proof!($($proof)*)));
     (proof $n:ident($($p:tt)*){ $($proof:tt)* }) =>
-        (Element::Proof(stringify!($n).to_owned(), vec![], element_par!($($p)*), proof!($($proof)*)));
+        (Element::Proof(stringify!($n).to_owned(), vec![], Some(pattern_tuple!(()$($p)*,)), proof!($($proof)*)));
     (proof $n:ident[$($g:ident),*]($($p:tt)*){ $($proof:tt)* }) =>
-        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], element_par!($($p)*), proof!($($proof)*)));
+        (Element::Proof(stringify!($n).to_owned(), vec![$(stringify!($g).to_owned()),*], Some(pattern_tuple!(()$($p)*,)), proof!($($proof)*)));
 }
 
 macro_rules! element_gen {
@@ -190,10 +190,6 @@ macro_rules! element_gen {
     (($($v:tt)*)  $x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Invariant    , stringify!($x).to_owned())), ) $($rest)*);
     (($($v:tt)*) +$x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Covariant    , stringify!($x).to_owned())), ) $($rest)*);
     (($($v:tt)*) -$x:ident, $($rest:tt)*) => (element_gen!(($($v)* (Variance::Contravariant, stringify!($x).to_owned())), ) $($rest)*);
-}
-
-macro_rules! element_par {
-    ($($p:ident : $($t:ident)*$([$($tg:tt)*])*$(($($tp:tt)*))*),*) => (vec![$(Par::new(stringify!($p).to_owned(), ttype!($($t)*$([$($tg)*])*$(($($tp)*))*))),*]);
 }
 
 macro_rules! enum_variants {
