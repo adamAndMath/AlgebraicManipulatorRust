@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use predef::*;
 use env::{ LocalID, PushLocal };
 use envs::{ LocalEnvs, ExpVal, TruthVal };
 use super::{ Type, Pattern, Exp, ErrID, SetLocal };
@@ -27,7 +28,7 @@ impl<'a> MatchEnv<'a> {
     pub fn get(&self, k: &Exp) -> Option<Exp> {
         match self {
             MatchEnv::Base() => None,
-            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||b.get(k).map(|val|val.push_local(PhantomData::<ExpVal>, v.len()))),
+            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||b.get(k)),
         }
     }
 }
@@ -65,20 +66,20 @@ impl TruthRef {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = &match par {
                     Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs)?,
-                                    Exp::Call(box f, box arg) =>
-                                        match f {
-                                            Exp::Var(id, gs) =>
-                                                match env.exp.get(*id)?.val(*id, gs)? {
-                                                    Exp::Closure(v) => v,
-                                                    _ => unimplemented!(),
-                                                },
-                                            Exp::Closure(v) => v.clone(),
-                                            _ => unimplemented!(),
-                                        }.into_iter()
-                                            .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
-                                            .next()
-                            .ok_or(ErrID::NoMatch(arg.clone()))?,
+                    Exp::Call(box f, box arg) =>
+                        match f {
+                            Exp::Var(id, gs) =>
+                                match env.exp.get(*id)?.val(*id, gs)? {
+                                    Exp::Closure(v) => v,
                                     _ => unimplemented!(),
+                                },
+                            Exp::Closure(v) => v.clone(),
+                            _ => unimplemented!(),
+                        }.into_iter()
+                            .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
+                            .next()
+                            .ok_or(ErrID::NoMatch(arg.clone()))?,
+                    _ => unimplemented!(),
                 };
                 let (par, res) = match dir {
                     Direction::Forwards => (res, par),
@@ -88,11 +89,11 @@ impl TruthRef {
                     let par = par.push_local(PhantomData::<ExpVal>, i);
                     if *e == par {
                         Ok(res.push_local(PhantomData::<ExpVal>, i))
-                            } else {
-                                Err(ErrID::ExpMismatch(e.clone(), par))
-                            }
-                        }).map_err(|e|match e {Ok(e) => e.into(), Err(e) => e.into()})
-                    },
+                    } else {
+                        Err(ErrID::ExpMismatch(e.clone(), par))
+                    }
+                }).map_err(|e|match e {Ok(e) => e.into(), Err(e) => e.into()})
+            },
             RefType::Match => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = &match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;

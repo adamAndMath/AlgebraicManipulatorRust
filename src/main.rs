@@ -88,12 +88,14 @@ fn main() {
             match b {
                 true => ID[Bool](and(and(a, true), c))
                             .And_NeutralElement_Right(a)[1,0]
-                            ~And_NeutralElement_Left(c)[1,1],
+                            ~And_NeutralElement_Left(c)[1,1]
+                            ~match(b)[0,0,1|1,1,0],
                 false => ID[Bool](and(and(a, false), c))
                             .And_AbsorbativeElement_Right(a)[1,0]
-                            .And_NeutralElement_Left(c)[1]
+                            .And_AbsorbativeElement_Left(c)[1]
                             ~And_AbsorbativeElement_Right(a)[1]
                             ~And_AbsorbativeElement_Left(c)[1,1]
+                            ~match(b)[0,0,1|1,1,0]
             }
         }
 

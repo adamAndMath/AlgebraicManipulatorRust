@@ -136,3 +136,20 @@ fn id_call() {
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(EQ_ID[BOOL_ID](TRUE_ID, TRUE_ID))));
 }
+
+#[test]
+fn double_negate() {
+    let (mut exps, mut tys, mut truths) = predef();
+    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    alias_predef(&mut env);
+    element!(fn not { true => false, false => true }).define(&mut env).unwrap();
+    element!(
+        proof DoubleNegate(b: Bool) {
+            match b {
+                true => ID[Bool](not(not(true)))~wrap(not(true))[1,0]~wrap(not(false))[1]~match(b)[0,0,0|1],
+                false => ID[Bool](not(not(false)))~wrap(not(false))[1,0]~wrap(not(true))[1]~match(b)[0,0,0|1]
+            }
+        }
+    ).define(&mut env).unwrap();
+    assert_eq!(env.truth.get(env.truth.get_id("DoubleNegate").unwrap()).unwrap(), &TruthVal::new(exp!(forall[Bool]((b: Bool) -> eq[Bool](not(not(b)), b))).to_id(&env.local()).unwrap(), 0));
+}

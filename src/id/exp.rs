@@ -87,9 +87,9 @@ impl SetLocal<Type> for Exp {
 }
 
 impl Exp {
-    pub fn apply<E, F: Fn(&Self, usize) -> Result<Self, E>>(&self, path: &Tree, i: usize, f: &F) -> Result<Self, Result<E, Tree>> {
+    pub fn apply<E, F: Fn(&Self, usize) -> Result<Self, E>>(&self, path: &Tree, push: usize, f: &F) -> Result<Self, Result<E, Tree>> {
         if path.is_empty() {
-            f(self, i).map_err(Ok)
+            f(self, push).map_err(Ok)
         } else {
             Ok(match self {
                 Exp::Var(_, _) => return Err(Err(path.clone())),
@@ -98,7 +98,7 @@ impl Exp {
 
                     Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
                         match path.get(i) {
-                            Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            Some(p) => e.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
                             None => Ok(e.clone()),
                         }
                     ).collect::<Result<_,_>>()?)
@@ -108,7 +108,7 @@ impl Exp {
 
                     Exp::Closure(v.into_iter().enumerate().map(|(i, (p, e))|
                         match path.get(i) {
-                            Some(path) => e.apply(path, i, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            Some(path) => e.apply(path, push, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
                             None => Ok((p.clone(), e.clone())),
                         }
                     ).collect::<Result<_,_>>()?)
@@ -116,7 +116,7 @@ impl Exp {
                 Exp::Call(e1, box e2) => {
                     Exp::Call(
                         match path.get(TreeChar::Func) {
-                            Some(p) => Box::new(e1.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?),
+                            Some(p) => Box::new(e1.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?),
                             None => e1.clone(),
                         },
                         Box::new(
@@ -127,7 +127,7 @@ impl Exp {
 
                                         Exp::Tuple(v.into_iter().enumerate().map(|(i, e)|
                                             match path.get(i) {
-                                                Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                                                Some(p) => e.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
                                                 None => Ok(e.clone()),
                                             }
                                         ).collect::<Result<_,_>>()?)
@@ -135,14 +135,14 @@ impl Exp {
                                     e => {
                                         path.is_within(0..1, &[TreeChar::Func]).map_err(|t|Err(outside*t))?;
                                         match path.get(0) {
-                                            Some(p) => e.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
+                                            Some(p) => e.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?,
                                             None => e.clone(),
                                         }
                                     }
                                 }
                             } else {
                                 match path.get(TreeChar::Tuple) {
-                                    Some(p) => e2.apply(p, i, f).map_err(|e|e.map_err(|t|Tree::edge(i)+t))?,
+                                    Some(p) => e2.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?,
                                     None => (e2).clone(),
                                 }
                             }
