@@ -34,8 +34,8 @@ fn main() {
 
         proof DoubleNegative(b: Bool) {
             match b {
-                true => ID[Bool](not(not(true)))~wrap(not(true))[1,0]~wrap(not(false))[1]~match(b)[0,0,0|1],
-                false => ID[Bool](not(not(false)))~wrap(not(false))[1,0]~wrap(not(true))[1]~match(b)[0,0,0|1]
+                true => ID[Bool](not(not(true))).def(not(true))[1,0].def(not(false))[1]~match(b)[0,0,0|1],
+                false => ID[Bool](not(not(false))).def(not(false))[1,0].def(not(true))[1]~match(b)[0,0,0|1]
             }
         }
 
@@ -56,16 +56,16 @@ fn main() {
         proof And_Commutative(a: Bool, b: Bool) {
             match (a, b) {
                 (true, true) => ID[Bool](and(true, true))~match(a)[0,0|1,1]~match(b)[0,1|1,0],
-                (true, false) => ID[Bool](and(true, false))~wrap(and(true, false))[1].wrap(and(false, true))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
-                (false, true) => ID[Bool](and(false, true))~wrap(and(false, true))[1].wrap(and(true, false))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (true, false) => ID[Bool](and(true, false)).def(and(true, false))[1]~def(and(false, true))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
+                (false, true) => ID[Bool](and(false, true)).def(and(false, true))[1]~def(and(true, false))[1]~match(a)[0,0|1,1]~match(b)[0,1|1,0],
                 (false, false) => ID[Bool](and(false, false))~match(a)[0,0|1,1]~match(b)[0,1|1,0]
             }
         }
 
         proof And_NeutralElement_Left(b: Bool) {
             match b {
-                true => ID[Bool](and(true, true))~wrap(and(true, true))[1]~match(b)[0,1|1],
-                false => ID[Bool](and(true, false))~wrap(and(true, false))[1]~match(b)[0,1|1]
+                true => ID[Bool](and(true, true)).def(and(true, true))[1]~match(b)[0,1|1],
+                false => ID[Bool](and(true, false)).def(and(true, false))[1]~match(b)[0,1|1]
             }
         }
 
@@ -75,8 +75,8 @@ fn main() {
 
         proof And_AbsorbativeElement_Left(b: Bool) {
             match b {
-                true => ID[Bool](and(false, b)).match(b)[1,1]~wrap(and(false, true))[1],
-                false => ID[Bool](and(false, b)).match(b)[1,1]~wrap(and(false, false))[1]
+                true => ID[Bool](and(false, b)).match(b)[1,1].def(and(false, true))[1],
+                false => ID[Bool](and(false, b)).match(b)[1,1].def(and(false, false))[1]
             }
         }
 

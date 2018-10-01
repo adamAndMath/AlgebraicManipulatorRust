@@ -50,7 +50,7 @@ fn unwraping_var() {
     let e = exp!(forall((a: Bool) -> x));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("b".to_owned(), TruthVal::new(e_id, 0));
-    let p = proof!(b(false)~wrap(x)[]);
+    let p = proof!(b(false).def(x)[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
@@ -68,7 +68,7 @@ fn unwraping_match() {
     }(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
-    let p = proof!(m()~wrap({
+    let p = proof!(m().def({
         (true, true) => true,
         (true, false) => false,
         (false, true) => false,
@@ -86,7 +86,7 @@ fn unwraping_lambda_call() {
     let e = exp!(((a: Bool, b: Bool) -> b)(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
-    let p = proof!(m()~wrap(((a: Bool, b: Bool) -> b)(true, false))[]);
+    let p = proof!(m().def(((a: Bool, b: Bool) -> b)(true, false))[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
@@ -100,7 +100,7 @@ fn unwraping_function_call() {
     let e = exp!(f(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
     env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
-    let p = proof!(m()~wrap(f(true, false))[]);
+    let p = proof!(m().def(f(true, false))[]);
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
@@ -119,8 +119,8 @@ fn match_proof() {
     env.truth.add("m".to_owned(), TruthVal::new(e_id, 0));
     let p = proof!(
         match x {
-            true => m().match(x)[0]~wrap({ true => true, false => false }(true))[]~match(x)[],
-            false => m().match(x)[0]~wrap({ true => true, false => false }(false))[]~match(x)[]
+            true => m().match(x)[0].def({ true => true, false => false }(true))[]~match(x)[],
+            false => m().match(x)[0].def({ true => true, false => false }(false))[]~match(x)[]
         }
     );
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
@@ -146,8 +146,8 @@ fn double_negate() {
     element!(
         proof DoubleNegate(b: Bool) {
             match b {
-                true => ID[Bool](not(not(true)))~wrap(not(true))[1,0]~wrap(not(false))[1]~match(b)[0,0,0|1],
-                false => ID[Bool](not(not(false)))~wrap(not(false))[1,0]~wrap(not(true))[1]~match(b)[0,0,0|1]
+                true => ID[Bool](not(not(true))).def(not(true))[1,0].def(not(false))[1]~match(b)[0,0,0|1],
+                false => ID[Bool](not(not(false))).def(not(false))[1,0].def(not(true))[1]~match(b)[0,0,0|1]
             }
         }
     ).define(&mut env).unwrap();

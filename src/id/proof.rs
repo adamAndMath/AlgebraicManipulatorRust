@@ -36,7 +36,7 @@ impl<'a> MatchEnv<'a> {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RefType {
     Ref(LocalID<TruthVal>),
-    Wrap,
+    Def,
     Match,
 }
 
@@ -55,14 +55,14 @@ impl TruthRef {
     pub fn get(&self, env: &LocalEnvs) -> Result<Exp, ErrID> {
         match self.id {
             RefType::Ref(id) => env.truth.get(id)?.get(self.gen.clone(), self.par.clone(), env),
-            RefType::Wrap => unimplemented!(),
+            RefType::Def => unimplemented!(),
             RefType::Match => unimplemented!(),
         }
     }
 
     pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         match self.id {
-            RefType::Wrap => {
+            RefType::Def => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = &match par {
                     Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs)?,
@@ -82,8 +82,8 @@ impl TruthRef {
                     _ => unimplemented!(),
                 };
                 let (par, res) = match dir {
-                    Direction::Forwards => (res, par),
-                    Direction::Backwards => (par, res),
+                    Direction::Forwards => (par, res),
+                    Direction::Backwards => (res, par),
                 };
                 exp.apply(path, 0, &|e, i| {
                     let par = par.push_local(PhantomData::<ExpVal>, i);

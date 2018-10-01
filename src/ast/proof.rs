@@ -14,7 +14,7 @@ impl ToID for TruthRef {
     type To = TruthRefID;
     fn to_id(&self, env: &LocalEnvs) -> Result<TruthRefID, ErrAst> {
         let id = match self.name.as_ref() {
-            "wrap" => RefType::Wrap,
+            "def" => RefType::Def,
             "match" => RefType::Match,
             name => RefType::Ref(env.truth.get_id(name).map_err(ErrAst::UnknownTruth)?),
         };
