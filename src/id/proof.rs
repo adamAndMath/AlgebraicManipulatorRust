@@ -63,15 +63,8 @@ impl TruthRef {
         match self.id {
             RefType::Wrap => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
-
-                match dir {
-                    Direction::Forwards => unimplemented!(),
-                    Direction::Backwards => {
-                        exp.apply(path, 0, &|e, i| {
-                            let par = par.push_local(PhantomData::<ExpVal>, i);
-                            if *e == par {
-                                match e {
-                                    Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs).map(|e|e.push_local(PhantomData::<ExpVal>, i)),
+                let res = &match par {
+                    Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs)?,
                                     Exp::Call(box f, box arg) =>
                                         match f {
                                             Exp::Var(id, gs) =>
@@ -84,16 +77,22 @@ impl TruthRef {
                                         }.into_iter()
                                             .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
                                             .next()
-                                            .ok_or(ErrID::NoMatch(arg.clone())),
+                            .ok_or(ErrID::NoMatch(arg.clone()))?,
                                     _ => unimplemented!(),
-                                }
+                };
+                let (par, res) = match dir {
+                    Direction::Forwards => (res, par),
+                    Direction::Backwards => (par, res),
+                };
+                exp.apply(path, 0, &|e, i| {
+                    let par = par.push_local(PhantomData::<ExpVal>, i);
+                    if *e == par {
+                        Ok(res.push_local(PhantomData::<ExpVal>, i))
                             } else {
                                 Err(ErrID::ExpMismatch(e.clone(), par))
                             }
                         }).map_err(|e|match e {Ok(e) => e.into(), Err(e) => e.into()})
                     },
-                }
-            },
             RefType::Match => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = &match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
@@ -111,7 +110,27 @@ impl TruthRef {
                     }
                 }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
             },
-            _ => unimplemented!(),
+            RefType::Ref(_) => {
+                let truth = self.get(env)?;
+                if let Exp::Call(box Exp::Var(eq, t), box Exp::Tuple(v)) = truth {
+                    if eq != EQ_ID { return Err(ErrID::ExpMismatch(Exp::Var(eq, vec![]), Exp::Var(EQ_ID.into(), vec![])))}
+                    if let [ref par, ref res] = v[..] {
+                        let (par, res) = match dir {
+                            Direction::Forwards => (par, res),
+                            Direction::Backwards => (res, par),
+                        };
+
+                        exp.apply(path, 0, &|e, i| {
+                            let par = par.push_local(PhantomData::<ExpVal>, i);
+                            if *e == par {
+                                Ok(res.push_local(PhantomData::<ExpVal>, i))
+                            } else {
+                                Err(ErrID::ExpMismatch(e.clone(), par))
+                            }
+                        }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
+                    } else {Err(ErrID::NoMatch(Exp::Call(Box::new(Exp::Var(LocalID::Global(EQ_ID), t)), Box::new(Exp::Tuple(v.clone())))))}
+                } else {Err(ErrID::NoMatch(truth))}
+            },
         }
     }
 }
