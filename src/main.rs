@@ -70,7 +70,7 @@ fn main() {
         }
 
         proof And_NeutralElement_Right(b: Bool) {
-            ID[Bool](and(b, true)).And_Commutative(b, true)[1].And_NeutralElement_Left(b)[1]
+            And_Commutative(b, true).And_NeutralElement_Left(b)[1]
         }
 
         proof And_AbsorbativeElement_Left(b: Bool) {
@@ -81,7 +81,7 @@ fn main() {
         }
 
         proof And_AbsorbativeElement_Right(b: Bool) {
-            ID[Bool](and(b, false)).And_Commutative(b, false)[1].And_AbsorbativeElement_Left(b)[1]
+            And_Commutative(b, false).And_AbsorbativeElement_Left(b)[1]
         }
 
         proof And_Associative(a: Bool, b: Bool, c: Bool) {
