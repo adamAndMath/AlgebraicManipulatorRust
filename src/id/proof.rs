@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use predef::*;
 use env::{ LocalID, PushLocal };
 use envs::{ LocalEnvs, ExpVal, TruthVal };
-use super::{ Type, Pattern, Exp, ErrID, SetLocal };
+use super::{ Type, Pattern, Exp, ErrID, SetLocal, TypeCheck };
 use tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,19 +52,12 @@ impl TruthRef {
         TruthRef { id, gen, par }
     }
 
-    pub fn get(&self, env: &LocalEnvs) -> Result<Exp, ErrID> {
+    pub fn get(&self, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         match self.id {
             RefType::Ref(id) => env.truth.get(id)?.get(self.gen.clone(), self.par.clone(), env),
-            RefType::Def => unimplemented!(),
-            RefType::Match => unimplemented!(),
-        }
-    }
-
-    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
-        match self.id {
             RefType::Def => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
-                let res = &match par {
+                let res = match par {
                     Exp::Var(id, gs) => env.exp.get(*id)?.val(*id, gs)?,
                     Exp::Call(box f, box arg) =>
                         match f {
@@ -81,22 +74,23 @@ impl TruthRef {
                             .ok_or(ErrID::NoMatch(arg.clone()))?,
                     _ => unimplemented!(),
                 };
-                let (par, res) = match dir {
-                    Direction::Forwards => (par, res),
-                    Direction::Backwards => (res, par),
-                };
-                exp.apply(path, 0, &|e, i| {
-                    let par = par.push_local(PhantomData::<ExpVal>, i);
-                    if *e == par {
-                        Ok(res.push_local(PhantomData::<ExpVal>, i))
-                    } else {
-                        Err(ErrID::ExpMismatch(e.clone(), par))
-                    }
-                }).map_err(|e|match e {Ok(e) => e.into(), Err(e) => e.into()})
+                let ty = par.type_check(env)?;
+                Ok(Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![ty])), Box::new(Exp::Tuple(vec![par.clone(), res]))))
             },
             RefType::Match => {
-                let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
-                let res = &match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?.clone();
+                let res = match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let ty = par.type_check(env)?;
+                Ok(Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![ty])), Box::new(Exp::Tuple(vec![par.clone(), res]))))
+            },
+        }
+    }
+
+    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+        let truth = self.get(env, match_env)?;
+        if let Exp::Call(box Exp::Var(eq, t), box Exp::Tuple(v)) = truth {
+            if eq != EQ_ID { return Err(ErrID::ExpMismatch(Exp::Var(eq, vec![]), Exp::Var(EQ_ID.into(), vec![])))}
+            if let [ref par, ref res] = v[..] {
                 let (par, res) = match dir {
                     Direction::Forwards => (par, res),
                     Direction::Backwards => (res, par),
@@ -110,29 +104,8 @@ impl TruthRef {
                         Err(ErrID::ExpMismatch(e.clone(), par))
                     }
                 }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
-            },
-            RefType::Ref(_) => {
-                let truth = self.get(env)?;
-                if let Exp::Call(box Exp::Var(eq, t), box Exp::Tuple(v)) = truth {
-                    if eq != EQ_ID { return Err(ErrID::ExpMismatch(Exp::Var(eq, vec![]), Exp::Var(EQ_ID.into(), vec![])))}
-                    if let [ref par, ref res] = v[..] {
-                        let (par, res) = match dir {
-                            Direction::Forwards => (par, res),
-                            Direction::Backwards => (res, par),
-                        };
-
-                        exp.apply(path, 0, &|e, i| {
-                            let par = par.push_local(PhantomData::<ExpVal>, i);
-                            if *e == par {
-                                Ok(res.push_local(PhantomData::<ExpVal>, i))
-                            } else {
-                                Err(ErrID::ExpMismatch(e.clone(), par))
-                            }
-                        }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
-                    } else {Err(ErrID::NoMatch(Exp::Call(Box::new(Exp::Var(LocalID::Global(EQ_ID), t)), Box::new(Exp::Tuple(v.clone())))))}
-                } else {Err(ErrID::NoMatch(truth))}
-            },
-        }
+            } else {Err(ErrID::NoMatch(Exp::Call(Box::new(Exp::Var(LocalID::Global(EQ_ID), t)), Box::new(Exp::Tuple(v.clone())))))}
+        } else {Err(ErrID::NoMatch(truth))}
     }
 }
 
@@ -147,7 +120,7 @@ impl Proof {
     pub fn execute(&self, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         Ok(match self {
             Proof::Sequence(initial, rest) => {
-                let mut proof = initial.get(env)?;
+                let mut proof = initial.get(env, match_env)?;
                 for (dir, truth, path) in rest {
                     proof = truth.apply(*dir, path, proof, env, match_env)?;
                 }
