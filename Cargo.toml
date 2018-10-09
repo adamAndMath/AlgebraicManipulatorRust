@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Adam <adam.and.math@gmail.com>"]
 
 [dependencies]
+pest = "^2.0.1"
+pest_derive = "^2.0.1"

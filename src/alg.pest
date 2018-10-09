@@ -1,0 +1,62 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+file = { SOI ~ element* ~ EOI }
+
+number = @{ ASCII_DIGIT+ }
+name = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+
+tree = { "[" ~ ( tree_path ~ ( "|" ~ tree_path )* )? ~ "]" }
+tree_path = { tree_index ~ ( "," ~ tree_index )* }
+tree_index = _{ number | tree_char | tree }
+tree_char = { "f" | "t" }
+
+variance = { ( "+" | "-" )? }
+
+type_arg = { ( "<" ~ ty ~ ("," ~ ty)* ~ ">" )? }
+type_par = { ( "<" ~ name ~ ("," ~ name)* ~ ">" )? }
+type_gen = { ( "<" ~ type_variance ~ ("," ~ type_variance)* ~ ">" )? }
+type_variance = { variance ~ name }
+of_type = { ( ":" ~ ty )? }
+return_type = { ( "->" ~ ty )? }
+clauses = { ("where")? }
+
+ty = _{ ty_gen | ty_tuple }
+ty_gen = { name ~ type_arg }
+ty_tuple = { "(" ~ ty ~ ( "," ~ ty )* ~ ")" }
+
+pattern = _{ pattern_var | pattern_comp | pattern_atom | pattern_tuple }
+pattern_var = { name ~ ":" ~ ty }
+pattern_atom = { name ~ type_arg }
+pattern_comp = { name ~ type_arg ~ pattern_tuple }
+pattern_tuple = { "(" ~ pattern ~ ( "," ~ pattern )* ~ ")" }
+
+exp = _{ exp_call | exp_lambda | exp_strong }
+exp_strong = _{ exp_var | exp_tuple | exp_match }
+exp_var = { name ~ type_arg }
+exp_call = { exp_strong ~ (exp_tuple)+ }
+exp_tuple = { "(" ~ exp ~ ( "," ~ exp )* ~ ")" }
+exp_match = { "{" ~ exp_arm ~ ("," ~ exp_arm )* ~ ","? ~ "}" }
+exp_arm = { pattern ~ "=>" ~ exp }
+exp_lambda = { pattern_tuple ~ "->" ~ exp }
+
+truth_dir = { "." | "~" }
+truth_ref = { name ~ type_arg ~ exp_tuple? }
+substitute = { truth_dir ~ truth_ref ~ tree }
+
+proof = _{ proof_match | proof_sequence | proof_block }
+proof_sequence = { truth_ref ~ substitute* }
+proof_block = { "{" ~ proof_block_defs ~ proof ~ "}" }
+proof_block_defs = { proof_block_def* }
+proof_block_def = { "let" ~ name ~ "=" ~ proof }
+proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
+proof_arm = { pattern ~ "=>" ~ proof }
+
+element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
+elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
+elm_struct_par = { ty_tuple? }
+elm_enum = { name ~ type_gen ~ clauses ~ "{" ~ elm_emum_variant ~ ("," ~ elm_emum_variant)* ~ ","? ~ "}" }
+elm_emum_variant = { name ~ elm_struct_par }
+elm_let = { name ~ type_par ~ of_type ~ clauses ~ "=" ~ exp }
+elm_func = { name ~ type_par ~ pattern_tuple ~ return_type ~ clauses ~ "=" ~ exp }
+elm_func_match = { name ~ type_par ~ return_type ~ clauses ~ exp_match }
+elm_proof = { name ~ type_par ~ pattern_tuple ~ clauses ~ "=" ~ proof }

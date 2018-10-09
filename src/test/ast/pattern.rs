@@ -1,3 +1,4 @@
+use parser::Parse;
 use predef::*;
 use envs::*;
 use variance::Variance;
@@ -17,8 +18,8 @@ fn to_id() {
 
     let env = env.local();
 
-    assert_eq!(pattern!(Zero).to_id(&env), Ok(pattern_id!(zero_id)));
-    assert_eq!(pattern!(n: Nat).to_id(&env), Ok(pattern_id!(+nat_id)));
-    assert_eq!(pattern!(Succ(Zero)).to_id(&env), Ok(pattern_id!(succ_id(zero_id))));
-    assert_eq!(pattern!(Succ(n: Nat)).to_id(&env), Ok(pattern_id!(succ_id(+nat_id))));
+    assert_eq!(Pattern::parse("Zero").to_id(&env), Ok(pattern_id!(zero_id)));
+    assert_eq!(Pattern::parse("n: Nat").to_id(&env), Ok(pattern_id!(+nat_id)));
+    assert_eq!(Pattern::parse("Succ(Zero)").to_id(&env), Ok(pattern_id!(succ_id(zero_id))));
+    assert_eq!(Pattern::parse("Succ(n: Nat)").to_id(&env), Ok(pattern_id!(succ_id(+nat_id))));
 }
