@@ -1,7 +1,7 @@
 macro_rules! truth_ref {
-    ($n:ident()) => (TruthRef::new(stringify!($n).to_owned(), vec![], None));
-    ($n:ident($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), vec![], Some(exp_tuple!($($p)*))));
-    ($n:ident[$($g:tt)*]($($p:tt)*)) => (TruthRef::new(stringify!($n).to_owned(), ttype_vec!($($g)*), Some(exp_tuple!($($p)*))));
+    ($($n:ident)::+()) => (TruthRef::new(path!($($n)::+), vec![], None));
+    ($($n:ident)::+($($p:tt)*)) => (TruthRef::new(path!($($n)::+), vec![], Some(exp_tuple!($($p)*))));
+    ($($n:ident)::+[$($g:tt)*]($($p:tt)*)) => (TruthRef::new(path!($($n)::+), ttype_vec!($($g)*), Some(exp_tuple!($($p)*))));
 }
 
 macro_rules! proof {

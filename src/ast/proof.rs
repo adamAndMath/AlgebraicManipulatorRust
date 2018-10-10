@@ -1,3 +1,4 @@
+use env::Path;
 use envs::LocalEnvs;
 use super::{ Type, Pattern, Exp, ErrAst, ToID };
 use id::renamed::{ TruthRefID, ProofID, Direction, RefType };
@@ -5,7 +6,7 @@ use tree::Tree;
 
 #[derive(Debug)]
 pub struct TruthRef {
-    name: String,
+    name: Path,
     gen: Vec<Type>,
     par: Option<Exp>,
 }
@@ -14,9 +15,9 @@ impl ToID for TruthRef {
     type To = TruthRefID;
     fn to_id(&self, env: &LocalEnvs) -> Result<TruthRefID, ErrAst> {
         let id = match self.name.as_ref() {
-            "def" => RefType::Def,
-            "match" => RefType::Match,
-            name => RefType::Ref(env.truth.get_id(name).map_err(ErrAst::UnknownTruth)?),
+            [n] if n == "def" => RefType::Def,
+            [n] if n == "match" => RefType::Match,
+            _ => RefType::Ref(env.truth.get_id(&self.name).map_err(ErrAst::UnknownTruth)?),
         };
         let gen: Vec<_> = self.gen.to_id(env)?;
         let par = self.par.to_id(env)?;
@@ -25,7 +26,7 @@ impl ToID for TruthRef {
 }
 
 impl TruthRef {
-    pub fn new(name: String, gen: Vec<Type>, par: Option<Exp>) -> Self {
+    pub fn new(name: Path, gen: Vec<Type>, par: Option<Exp>) -> Self {
         TruthRef { name, gen, par }
     }
 }

@@ -1,6 +1,6 @@
 use predef::*;
 use envs::*;
-use env::LocalID;
+use env::{ LocalID, Path };
 use id::renamed::ExpID;
 use ast::{ Type, Pattern, Exp, ToID };
 use tree::*;

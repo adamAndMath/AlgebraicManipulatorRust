@@ -2,12 +2,12 @@ use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use super::{ Env, LocalID, PushLocal };
+use super::{ Env, LocalID, PushLocal, Path };
 
 #[derive(Debug)]
 pub enum LocalEnv<'a, T: 'a> {
     Base(&'a Env<'a, T>),
-    Scope(&'a LocalEnv<'a, T>, HashMap<String, usize>, Vec<T>),
+    Scope(&'a LocalEnv<'a, T>, HashMap<Path, usize>, Vec<T>),
 }
 
 impl<'a, T: 'a> LocalEnv<'a, T> {
@@ -16,14 +16,14 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
     }
 
     pub fn scope<'b>(&'b self, v: Vec<(String, T)>) -> LocalEnv<'b, T> where 'a: 'b {
-        LocalEnv::Scope(self, v.iter().enumerate().map(|(id,(n,_))|(n.clone(),id)).collect(), v.into_iter().map(|(_,e)|e).collect())
+        LocalEnv::Scope(self, v.iter().enumerate().map(|(id,(n,_))|(n.clone().into(),id)).collect(), v.into_iter().map(|(_,e)|e).collect())
     }
 
     pub fn scope_anon<'b>(&'b self, v: Vec<T>) -> LocalEnv<'b, T> where 'a: 'b {
         LocalEnv::Scope(self, HashMap::new(), v)
     }
 
-    pub fn get_id<S: ?Sized + Hash + Eq + AsRef<str>>(&self, name: &S) -> Result<LocalID<T>, String> where String: Borrow<S> {
+    pub fn get_id(&self, name: &Path) -> Result<LocalID<T>, Path> {
         match self {
             LocalEnv::Base(env) => env.get_id(name).map(|id|id.into()),
             LocalEnv::Scope(env, m, v) =>

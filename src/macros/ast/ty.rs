@@ -1,6 +1,6 @@
 macro_rules! ttype {
-    ($t:ident) => (Type::Gen(stringify!($t).to_owned(), vec!()));
-    ($t:ident[$($g:tt)*]) => (Type::Gen(stringify!($t).to_owned(), ttype_vec!($($g)*)));
+    ($($t:ident)::+) => (Type::Gen(path!($($t)::+), vec!()));
+    ($($t:ident)::+[$($g:tt)*]) => (Type::Gen(path!($($t)::+), ttype_vec!($($g)*)));
     (($($p:tt)*)) => (ttype_tuple!($($p)*));
 }
 

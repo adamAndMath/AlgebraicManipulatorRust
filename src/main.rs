@@ -16,6 +16,7 @@ mod test;
 
 fn main() {
     use predef::*;
+    use env::Path;
     use envs::Envs;
     use variance::Variance;
     use tree::Tree;

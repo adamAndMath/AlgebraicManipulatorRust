@@ -1,10 +1,11 @@
+use env::Path;
 use envs::LocalEnvs;
 use id::renamed::{ TypeID, ErrID };
 use super::{ ErrAst, ToID };
 
 #[derive(Debug, Clone)]
 pub enum Type {
-    Gen(String, Vec<Type>),
+    Gen(Path, Vec<Type>),
     Tuple(Vec<Type>),
 }
 
