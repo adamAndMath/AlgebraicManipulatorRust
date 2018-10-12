@@ -31,7 +31,7 @@ fn struct_tuple() {
     let lens = (exps.len(), tys.len(), truths.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
-        env.ty.alias("fn".to_owned(), FN_ID);
+        env.ty.alias("fn".to_owned(), FN_ID.into());
         element!(struct A).define(&mut env).unwrap();
         element!(struct B).define(&mut env).unwrap();
         element!(struct Test(A, B)).define(&mut env).unwrap();
@@ -70,7 +70,7 @@ fn func() {
     let lens = (exps.len(), tys.len(), truths.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
-        env.ty.alias("fn".to_owned(), FN_ID);
+        env.ty.alias("fn".to_owned(), FN_ID.into());
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
         element!(
             fn add -> Nat {

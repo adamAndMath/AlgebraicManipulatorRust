@@ -5,6 +5,10 @@ impl Path {
     pub fn new(v: Vec<String>) -> Self {
         Path(v)
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+        self.0.iter()
+    }
 }
 
 impl From<String> for Path {

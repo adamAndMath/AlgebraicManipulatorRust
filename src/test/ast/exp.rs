@@ -9,7 +9,7 @@ use tree::*;
 fn succ_zero() {
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
-    env.ty.alias("fn".to_owned(), FN_ID);
+    env.ty.alias("fn".to_owned(), FN_ID.into());
 
     let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
 

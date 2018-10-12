@@ -1,4 +1,4 @@
-use env::{ ID, Env, Path };
+use env::{ ID, Env, Path, Val };
 
 #[test]
 fn create_empty_env() {
@@ -70,7 +70,7 @@ fn add_data_in_and_after_scope() {
 fn alias_unnamed_data() {
     let mut data = vec!("Not named");
     let mut env = Env::new(&mut data);
-    env.alias("name".to_owned(), ID::new(0));
+    env.alias("name".to_owned(), ID::new(0).into());
     assert_eq!(env.get_id(&path!(name)), Ok(ID::new(0)));
     assert_eq!(env.get(ID::new(0)), Ok(&"Not named"));
 }
