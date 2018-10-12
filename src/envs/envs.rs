@@ -1,4 +1,4 @@
-use env::{ Env, LocalEnv };
+use env::{ Env, LocalEnv, Path };
 use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]
@@ -17,12 +17,20 @@ impl<'a> Envs<'a> {
         }
     }
 
-    pub fn child_scope<'b>(&'b mut self) -> Envs<'b> where 'b: 'a {
-        Envs {
-            exp: self.exp.child_scope(),
-            ty: self.ty.child_scope(),
-            truth: self.truth.child_scope(),
-        }
+    pub fn child_scope<E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: String, f: F) -> Result<(), E> {
+        let (exp, ty, truth) = {
+            let mut child = Envs {
+                exp: self.exp.child_scope(),
+                ty: self.ty.child_scope(),
+                truth: self.truth.child_scope(),
+            };
+            f(&mut child)?;
+            (child.exp.to_val(), child.ty.to_val(), child.truth.to_val())
+        };
+        self.exp.add_val(n.clone(), exp);
+        self.ty.add_val(n.clone(), ty);
+        self.truth.add_val(n.clone(), truth);
+        Ok(())
     }
 
     pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {

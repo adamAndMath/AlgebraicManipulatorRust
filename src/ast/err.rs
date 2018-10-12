@@ -8,6 +8,7 @@ pub enum ErrAst {
     UnknownVar(Path),
     UnknownType(Path),
     UnknownTruth(Path),
+    UndefinedPath(Path),
     ErrID(ErrID),
 }
 

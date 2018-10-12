@@ -9,6 +9,10 @@ impl Path {
     pub fn iter(&self) -> impl Iterator<Item = &String> {
         self.0.iter()
     }
+
+    pub fn name(&self) -> String {
+        self.0[self.0.len() - 1].clone()
+    }
 }
 
 impl From<String> for Path {

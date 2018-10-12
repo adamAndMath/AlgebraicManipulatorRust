@@ -1,11 +1,13 @@
 use predef::*;
 use envs::*;
-use env::LocalID;
+use env::{ LocalID, Path };
 use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
 use variance::Variance::{ self, * };
 use id::renamed::{ TypeID, ExpID, MatchEnv, ErrID, TypeCheck };
 
 pub enum Element {
+    Module(String, Vec<Element>),
+    Using(Path),
     Struct(String, Vec<(Variance, String)>, Vec<Type>),
     Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
@@ -16,6 +18,27 @@ pub enum Element {
 impl Element {
     pub fn define(&self, env: &mut Envs) -> Result<(), ErrAst> {
         match self {
+            Element::Module(n, es) =>
+                env.child_scope::<ErrAst,_>(n.clone(), |env| {
+                    for e in es { e.define(env)? }
+                    Ok(())
+                })?,
+            Element::Using(p) => {
+                let mut err = true;
+                if let Ok(exp) = env.exp.get_val(p).map(|v|v.clone()) {
+                    env.exp.alias(p.name(), exp);
+                    err = false;
+                }
+                if let Ok(ty) = env.ty.get_val(p).map(|v|v.clone()) {
+                    env.ty.alias(p.name(), ty);
+                    err = false;
+                }
+                if let Ok(truth) = env.truth.get_val(p).map(|v|v.clone()) {
+                    env.truth.alias(p.name(), truth);
+                    err = false;
+                }
+                if err { return Err(ErrAst::UndefinedPath(p.clone())); }
+            },
             Element::Struct(n, gs, ps) => {
                 if ps.is_empty() {
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
