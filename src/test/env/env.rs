@@ -44,16 +44,16 @@ fn add_data_in_and_after_scope() {
         let mut env = Env::new(&mut data);
         env.add("x".to_owned(), "1st");
         {
-            let mut scope1 = env.scope();
+            let mut scope1 = env.child_scope();
             scope1.add("y".to_owned(), "2nd");
             {
-                let mut scope2 = scope1.scope();
+                let mut scope2 = scope1.child_scope();
                 scope2.add("x".to_owned(), "3rd");
                 assert_eq!(scope2.get_id(&path!(x)).map(|id|scope2.get(id)), Ok(Ok(&"3rd")));
-                assert_eq!(scope2.get_id(&path!(y)).map(|id|scope2.get(id)), Ok(Ok(&"2nd")));
+                assert_eq!(scope2.get_id(&path!(y)).map(|id|scope2.get(id)), Err(path!(y)));
             }
             scope1.add("y".to_owned(), "4th");
-            assert_eq!(scope1.get_id(&path!(x)).map(|id|scope1.get(id)), Ok(Ok(&"1st")));
+            assert_eq!(scope1.get_id(&path!(x)).map(|id|scope1.get(id)), Err(path!(x)));
             assert_eq!(scope1.get_id(&path!(y)).map(|id|scope1.get(id)), Ok(Ok(&"4th")));
         }
         

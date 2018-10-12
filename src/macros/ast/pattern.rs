@@ -8,6 +8,6 @@ macro_rules! pattern {
 }
 
 macro_rules! pattern_tuple {
-    ($($x:ident):*$(($($p:tt)*))*$([$($g:tt)*])*) => (pattern!($($x):*$(($($p)*))*$([$($g)*])*));
-    ($($($x:ident):*$(($($p:tt)*))*$([$($g:tt)*])*),*) => (Pattern::Tuple(vec![$(pattern!($($x):*$(($($p)*))*$([$($g)*])*)),*]));
+    ($($x:ident):*$(::$y:ident)*$(($($p:tt)*))*$([$($g:tt)*])*) => (pattern!($($x):*$(::$y)*$(($($p)*))*$([$($g)*])*));
+    ($($($x:ident):*$(::$y:ident)*$(($($p:tt)*))*$([$($g:tt)*])*),*) => (Pattern::Tuple(vec![$(pattern!($($x):*$(::$y)*$(($($p)*))*$([$($g)*])*)),*]));
 }

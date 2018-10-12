@@ -106,18 +106,18 @@ fn main() {
         }
 
         fn add -> Nat {
-            (a: Nat, Zero) => a,
-            (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+            (a: Nat, Nat::Zero) => a,
+            (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
         }
 
         fn mul -> Nat {
-            (a: Nat, Zero) => Zero,
-            (a: Nat, Succ(p: Nat)) => add(mul(a, p), a)
+            (a: Nat, Nat::Zero) => Nat::Zero,
+            (a: Nat, Nat::Succ(p: Nat)) => add(mul(a, p), a)
         }
 
         fn pow -> Nat {
-            (a: Nat, Zero) => Succ(Zero),
-            (a: Nat, Succ(p: Nat)) => mul(pow(a, p), a)
+            (a: Nat, Nat::Zero) => Nat::Succ(Nat::Zero),
+            (a: Nat, Nat::Succ(p: Nat)) => mul(pow(a, p), a)
         }
 
         enum IntP {
@@ -126,18 +126,18 @@ fn main() {
         }
 
         fn add -> IntP {
-            (a: IntP, One) => Succ(a),
-            (a: IntP, Succ(p: IntP)) => Succ(add(a, p))
+            (a: IntP, IntP::One) => IntP::Succ(a),
+            (a: IntP, IntP::Succ(p: IntP)) => IntP::Succ(add(a, p))
         }
 
         fn mul -> IntP {
-            (a: IntP, One) => a,
-            (a: IntP, Succ(p: IntP)) => add(mul(a, p), a)
+            (a: IntP, IntP::One) => a,
+            (a: IntP, IntP::Succ(p: IntP)) => add(mul(a, p), a)
         }
 
         fn pow -> IntP {
-            (a: IntP, One) => a,
-            (a: IntP, Succ(p: IntP)) => mul(pow(a, p), a)
+            (a: IntP, IntP::One) => a,
+            (a: IntP, IntP::Succ(p: IntP)) => mul(pow(a, p), a)
         }
 
         enum Int {

@@ -34,15 +34,28 @@ impl Element {
                 let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
                 let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
                 let gs = gs.into_iter().map(|(_,g)|(g.clone(), TypeVal::new(vec![]))).collect::<Vec<_>>();
-                for (v, ps) in vs {
-                    if ps.is_empty() {
-                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(ty.clone(), gs.len()));
-                        env.ty.get_mut(ty_id).unwrap().push_atom(v_id);
-                    } else {
-                        let p = if let [p] = &ps[..] {p.clone()} else {Type::Tuple(ps.clone())}.to_id(&env.local().scope_ty(gs.clone()))?;
-                        let v_id = env.exp.add(v.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty.clone()))), gs.len()));
-                        env.ty.get_mut(ty_id).unwrap().push_comp(v_id);
+                let vs = vs.into_iter().map(|(n,t)|Ok((n.clone(), t.to_id(&env.local().scope_ty(gs.clone()))?))).collect::<Result<Vec<_>,ErrAst>>()?;
+                let mut atoms = vec![];
+                let mut comps = vec![];
+                let val = {
+                    let mut space = env.exp.child_scope();
+                    for (v, ps) in vs {
+                        if ps.is_empty() {
+                            atoms.push(space.add(v.clone(), ExpVal::new_empty(ty.clone(), gs.len())));
+                        } else {
+                            let p = if let [p] = &ps[..] {p.clone()} else {TypeID::Tuple(ps.clone())};
+                            comps.push(space.add(v.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty.clone()))), gs.len())));
+                        }
                     }
+                    space.to_val()
+                };
+                env.exp.add_val(n.clone(), val);
+                let ty = env.ty.get_mut(ty_id).unwrap();
+                for atom in atoms {
+                    ty.push_atom(atom);
+                }
+                for comp in comps {
+                    ty.push_comp(comp);
                 }
             },
             Element::Let(n, gs, an, e) => {

@@ -17,11 +17,11 @@ impl<'a> Envs<'a> {
         }
     }
 
-    pub fn scope<'b>(&'b mut self) -> Envs<'b> where 'b: 'a {
+    pub fn child_scope<'b>(&'b mut self) -> Envs<'b> where 'b: 'a {
         Envs {
-            exp: self.exp.scope(),
-            ty: self.ty.scope(),
-            truth: self.truth.scope(),
+            exp: self.exp.child_scope(),
+            ty: self.ty.child_scope(),
+            truth: self.truth.child_scope(),
         }
     }
 

@@ -3,6 +3,7 @@ use env::Path;
 use envs::*;
 use variance::Variance;
 use ast::{ Type, Pattern, Exp, Element, ToID };
+use id::renamed::TypeID;
 
 
 #[test]
@@ -49,14 +50,35 @@ fn struct_tuple() {
 }
 
 #[test]
+fn enum_option() {
+    let (mut exps, mut tys, mut truths) = predef();
+    let lens = (exps.len(), tys.len(), truths.len());
+    {
+        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        alias_predef(&mut env);
+        env.ty.alias("fn".to_owned(), FN_ID.into());
+        element!(enum Option[T] { Some(T), None }).define(&mut env).unwrap();
+
+        assert_eq!(env.exp.get_id(&path!(None)), Err(path!(None)));
+        assert_eq!(env.exp.get_id(&path!(Some)), Err(path!(Some)));
+        let none_id = env.exp.get_id(&path!(Option::None)).unwrap();
+        let some_id = env.exp.get_id(&path!(Option::Some)).unwrap();
+        assert_eq!(env.exp.get(none_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Ok(ttype!(Option[Bool]).to_id(&env.local()).unwrap()));
+        assert_eq!(env.exp.get(some_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Ok(ttype!(fn[Bool, Option[Bool]]).to_id(&env.local()).unwrap()));
+    }
+
+    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+2, lens.1+1, lens.2));
+}
+
+#[test]
 fn letting() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
         let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).unwrap();
-        element!(let two = Succ(Succ(Zero))).define(&mut env).unwrap();
-        element!(let two_marked: Nat = Succ(Succ(Zero))).define(&mut env).unwrap();
+        element!(let two = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
+        element!(let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
 
         assert_eq!(env.exp.get_id(&path!(two)).map(|id|env.exp.get(id).unwrap()), env.exp.get_id(&path!(two_marked)).map(|id|env.exp.get(id).unwrap()));
     }
@@ -74,8 +96,8 @@ fn func() {
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
         element!(
             fn add -> Nat {
-                (a: Nat, Zero) => a,
-                (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+                (a: Nat, Nat::Zero) => a,
+                (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
             }
         ).define(&mut env).expect("Failed to define add");
 
@@ -84,8 +106,8 @@ fn func() {
         let add = env.exp.get(add_id).expect("add has not been added to the environment");
         let exp = exp!(
             {
-                (a: Nat, Zero) => a,
-                (a: Nat, Succ(p: Nat)) => Succ(add(a, p))
+                (a: Nat, Nat::Zero) => a,
+                (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
             }
         ).to_id(&env).expect("Failed to build lambda");
 
@@ -102,5 +124,5 @@ fn lists() {
     let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
     
     element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
-    element!(fn prepend[T](e: T, l: List[T]) -> List[T] = Cons[T](e, l)).define(&mut env).unwrap();
+    element!(fn prepend[T](e: T, l: List[T]) -> List[T] = List::Cons[T](e, l)).define(&mut env).unwrap();
 }
