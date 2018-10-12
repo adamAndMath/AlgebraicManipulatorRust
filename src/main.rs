@@ -25,18 +25,20 @@ fn main() {
     
     let mut args = std::env::args();
     args.next();
-    let mut path = args.next().expect("expected file path");
-    path.push_str("\\mod.alg");
-
-    let file = std::fs::read_to_string(path).unwrap();
+    let path = args.next().expect("expected file path");
 
     let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut env = Envs::new(path, &mut exps, &mut tys, &mut truths);
     alias_predef(&mut env);
+    read_file(&mut env);
+}
 
+use envs::Envs;
+fn read_file(env: &mut Envs) {
+    let file = std::fs::read_to_string(format!("{}.alg", env.path.clone())).or_else(|_|std::fs::read_to_string(format!("{}\\mod.alg", env.path))).expect(&format!("{}", env.path));
     let elements = parser::parse_file(&file);
 
     for element in elements {
-        element.define(&mut env).unwrap();
+        element.define(env).unwrap();
     }
 }

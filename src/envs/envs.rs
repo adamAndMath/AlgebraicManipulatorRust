@@ -4,14 +4,16 @@ use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]
 pub struct Envs<'a> {
+    pub path: String,
     pub exp: Env<'a, ExpVal>,
     pub ty: Env<'a, TypeVal>,
     pub truth: Env<'a, TruthVal>,
 }
 
 impl<'a> Envs<'a> {
-    pub fn new(exps: &'a mut Vec<ExpVal>, tys: &'a mut Vec<TypeVal>, truths: &'a mut Vec<TruthVal>) -> Self {
+    pub fn new(path: String, exps: &'a mut Vec<ExpVal>, tys: &'a mut Vec<TypeVal>, truths: &'a mut Vec<TruthVal>) -> Self {
         Envs {
+            path,
             exp: Env::new(exps),
             ty: Env::new(tys),
             truth: Env::new(truths),
@@ -21,6 +23,7 @@ impl<'a> Envs<'a> {
     pub fn child_scope<E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: String, f: F) -> Result<(), E> {
         let (exp, ty, truth) = {
             let mut child = Envs {
+                path: format!("{}\\{}", self.path, n),
                 exp: self.exp.child_scope(),
                 ty: self.ty.child_scope(),
                 truth: self.truth.child_scope(),

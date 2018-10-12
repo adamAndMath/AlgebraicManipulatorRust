@@ -11,7 +11,7 @@ fn struct_empty() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
         Element::parse("struct Test").define(&mut env).unwrap();
 
         let e_id = env.exp.get_id(&Path::parse("Test")).unwrap();
@@ -31,7 +31,7 @@ fn struct_tuple() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         Element::parse("struct A").define(&mut env).unwrap();
         Element::parse("struct B").define(&mut env).unwrap();
@@ -54,7 +54,7 @@ fn enum_option() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
         alias_predef(&mut env);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         Element::parse("enum Option<T> { Some(T), None }").define(&mut env).unwrap();
@@ -75,7 +75,7 @@ fn letting() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
         Element::parse("enum Nat { Zero, Succ(Nat) }").define(&mut env).unwrap();
         Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
         Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
@@ -91,7 +91,7 @@ fn func() {
     let (mut exps, mut tys, mut truths) = predef();
     let lens = (exps.len(), tys.len(), truths.len());
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         Element::parse("enum Nat { Zero, Succ(Nat) }").define(&mut env).expect("Failed to define Nat");
         Element::parse(
@@ -121,7 +121,7 @@ fn func() {
 #[test]
 fn lists() {
     let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
     
     Element::parse("enum List<+T> { Nil, Cons(T, List<T>)}").define(&mut env).unwrap();
     Element::parse("fn prepend<T>(e: T, l: List<T>) -> List<T> = List::Cons<T>(e, l)").define(&mut env).unwrap();

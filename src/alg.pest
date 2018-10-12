@@ -53,7 +53,8 @@ proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ 
 proof_arm = { pattern ~ "=>" ~ proof }
 
 element = _{ "mod" ~ elm_mod | "use" ~ elm_use | "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
-elm_mod = { name ~ "{" ~ element* ~ "}" }
+elm_mod = { name ~ elm_mod_scope? }
+elm_mod_scope = { "{" ~ element* ~ "}" }
 elm_use = { path }
 elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
 elm_struct_par = { ty_tuple? }

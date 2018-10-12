@@ -4,9 +4,10 @@ use env::{ LocalID, Path };
 use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
 use variance::Variance::{ self, * };
 use id::renamed::{ TypeID, ExpID, MatchEnv, ErrID, TypeCheck };
+use read_file;
 
 pub enum Element {
-    Module(String, Vec<Element>),
+    Module(String, Option<Vec<Element>>),
     Using(Path),
     Struct(String, Vec<(Variance, String)>, Option<Type>),
     Enum(String, Vec<(Variance, String)>, Vec<(String, Option<Type>)>),
@@ -20,7 +21,11 @@ impl Element {
         match self {
             Element::Module(n, es) =>
                 env.child_scope::<ErrAst,_>(n.clone(), |env| {
-                    for e in es { e.define(env)? }
+                    if let Some(es) = es {
+                        for e in es { e.define(env)? }
+                    } else {
+                        read_file(env)
+                    }
                     Ok(())
                 })?,
             Element::Using(p) => {
