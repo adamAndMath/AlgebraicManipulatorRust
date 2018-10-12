@@ -18,11 +18,15 @@ impl<'a, T: 'a> Env<'a, T> {
     }
 
     pub fn child_scope<'b>(&'b mut self) -> Env<'b, T> where 'a: 'b {
-        Env {
-            vals: HashMap::new(),
+        let mut vals = HashMap::new();
+        vals.insert("super".to_owned(), Val::Space(self.space.clone()));
+
+        let mut env = Env {
+            vals,
             space: HashMap::new(),
             data: &mut self.data,
-        }
+        };
+        env
     }
 
     pub fn to_val(self) -> Val<T> {

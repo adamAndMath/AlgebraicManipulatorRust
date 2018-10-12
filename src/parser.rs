@@ -256,6 +256,13 @@ impl Parse for Element {
     const R: Rule = Rule::element;
     fn parse_pair(pair: Pair<Rule>) -> Self {
         match pair.as_rule() {
+            Rule::elm_mod => {
+                let mut inner = pair.into_inner();
+                let name = parse(&mut inner);
+                let elements = inner.map(Element::parse_pair).collect();
+                Element::Module(name, elements)
+            },
+            Rule::elm_use => Element::Using(parse(&mut pair.into_inner())),
             Rule::elm_struct => {
                 let mut inner = pair.into_inner();
                 let name = parse(&mut inner);

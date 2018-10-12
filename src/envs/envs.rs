@@ -1,3 +1,4 @@
+use predef::*;
 use env::{ Env, LocalEnv };
 use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 
@@ -24,6 +25,7 @@ impl<'a> Envs<'a> {
                 ty: self.ty.child_scope(),
                 truth: self.truth.child_scope(),
             };
+            alias_predef(&mut child);
             f(&mut child)?;
             (child.exp.to_val(), child.ty.to_val(), child.truth.to_val())
         };
