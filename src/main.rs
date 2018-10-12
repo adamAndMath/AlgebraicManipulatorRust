@@ -21,7 +21,6 @@ mod test;
 
 fn main() {
     use predef::*;
-    use env::Path;
     use envs::Envs;
     
     let mut args = std::env::args();

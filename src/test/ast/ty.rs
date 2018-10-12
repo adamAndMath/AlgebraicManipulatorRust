@@ -1,6 +1,5 @@
 use parser::Parse;
 use predef::*;
-use env::Path;
 use envs::*;
 use id::renamed::TypeID;
 use ast::{ Type, ToID };

@@ -1,7 +1,7 @@
 use parser::Parse;
 use predef::*;
 use envs::*;
-use env::{ LocalID, Path };
+use env::LocalID;
 use id::renamed::ExpID;
 use ast::{ Type, Exp, ToID };
 use tree::*;

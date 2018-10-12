@@ -1,4 +1,4 @@
-use env::{ Env, LocalEnv, Path };
+use env::{ Env, LocalEnv };
 use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]

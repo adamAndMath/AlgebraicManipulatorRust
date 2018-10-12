@@ -2,8 +2,7 @@ use parser::Parse;
 use predef::*;
 use env::Path;
 use envs::*;
-use variance::Variance;
-use ast::{ Type, Pattern, Exp, Element, ToID };
+use ast::{ Type, Exp, Element, ToID };
 use id::renamed::TypeID;
 
 

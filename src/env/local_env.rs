@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 use std::collections::HashMap;
-use std::borrow::Borrow;
-use std::hash::Hash;
 use super::{ Env, LocalID, PushLocal, Path };
 
 #[derive(Debug)]
