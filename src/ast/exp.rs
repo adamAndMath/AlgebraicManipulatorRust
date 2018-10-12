@@ -1,10 +1,11 @@
+use env::Path;
 use envs::LocalEnvs;
 use id::renamed::{ ExpID };
 use super::{ Type, Pattern, ErrAst, ToID };
 
 #[derive(Debug)]
 pub enum Exp {
-    Var(String, Vec<Type>),
+    Var(Path, Vec<Type>),
     Tuple(Vec<Exp>),
     Closure(Vec<(Pattern, Exp)>),
     Call(Box<Exp>, Box<Exp>),

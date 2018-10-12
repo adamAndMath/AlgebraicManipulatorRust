@@ -1,5 +1,6 @@
 use parser::Parse;
 use predef::*;
+use env::Path;
 use envs::*;
 use variance::Variance;
 use ast::{ Type, Pattern, ToID };

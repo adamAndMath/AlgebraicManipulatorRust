@@ -4,6 +4,7 @@ file = { SOI ~ element* ~ EOI }
 
 number = @{ ASCII_DIGIT+ }
 name = @{ ASCII_ALPHA ~ ( ASCII_ALPHANUMERIC | "_" )* }
+path = { name ~ ( "::" ~ name )* }
 
 tree = { "[" ~ ( tree_path ~ ( "|" ~ tree_path )* )? ~ "]" }
 tree_path = { tree_index ~ ( "," ~ tree_index )* }
@@ -21,18 +22,18 @@ return_type = { ( "->" ~ ty )? }
 clauses = { ("where")? }
 
 ty = _{ ty_gen | ty_tuple }
-ty_gen = { name ~ type_arg }
+ty_gen = { path ~ type_arg }
 ty_tuple = { "(" ~ ty ~ ( "," ~ ty )* ~ ")" }
 
 pattern = _{ pattern_var | pattern_comp | pattern_atom | pattern_tuple }
 pattern_var = { name ~ ":" ~ ty }
-pattern_atom = { name ~ type_arg }
-pattern_comp = { name ~ type_arg ~ pattern_tuple }
+pattern_atom = { path ~ type_arg }
+pattern_comp = { path ~ type_arg ~ pattern_tuple }
 pattern_tuple = { "(" ~ pattern ~ ( "," ~ pattern )* ~ ")" }
 
 exp = _{ exp_call | exp_lambda | exp_strong }
 exp_strong = _{ exp_var | exp_tuple | exp_match }
-exp_var = { name ~ type_arg }
+exp_var = { path ~ type_arg }
 exp_call = { exp_strong ~ (exp_tuple)+ }
 exp_tuple = { "(" ~ exp ~ ( "," ~ exp )* ~ ")" }
 exp_match = { "{" ~ exp_arm ~ ("," ~ exp_arm )* ~ ","? ~ "}" }
@@ -40,7 +41,7 @@ exp_arm = { pattern ~ "=>" ~ exp }
 exp_lambda = { pattern_tuple ~ "->" ~ exp }
 
 truth_dir = { "." | "~" }
-truth_ref = { name ~ type_arg ~ exp_tuple? }
+truth_ref = { path ~ type_arg ~ exp_tuple? }
 substitute = { truth_dir ~ truth_ref ~ tree }
 
 proof = _{ proof_match | proof_sequence | proof_block }

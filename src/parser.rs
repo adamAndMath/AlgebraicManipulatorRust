@@ -4,6 +4,7 @@ use pest::error::Error;
 use tree::{ Tree, TreeChar };
 use variance::Variance;
 use id::Direction;
+use env::Path;
 use ast::*;
 
 #[derive(Parser)]
@@ -102,6 +103,14 @@ impl Parse for Tree {
             Rule::number => Tree::edge(usize::parse_pair(pair)),
             r => unreachable!("{:?}", r),
         }
+    }
+}
+
+impl Parse for Path {
+    const R: Rule = Rule::path;
+    fn parse_pair(pair: Pair<Rule>) -> Self {
+        if pair.as_rule() != Rule::path { unreachable!("{:?}", pair.as_rule()) }
+        Path::new(pair.into_inner().map(String::parse_pair).collect())
     }
 }
 

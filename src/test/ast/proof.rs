@@ -1,5 +1,6 @@
 use parser::Parse;
 use predef::*;
+use env::Path;
 use envs::*;
 use ast::*;
 use id::renamed::*;
@@ -150,5 +151,5 @@ fn double_negate() {
             false => ID<Bool>(not(not(false))).def(not(false))[1,0].def(not(true))[1]~match(b)[0,0,0|1]
         }"
     ).define(&mut env).unwrap();
-    assert_eq!(env.truth.get(env.truth.get_id("DoubleNegate").unwrap()).unwrap(), &TruthVal::new(Exp::parse("forall<Bool>((b: Bool) -> eq<Bool>(not(not(b)), b))").to_id(&env.local()).unwrap(), 0));
+    assert_eq!(env.truth.get(env.truth.get_id(&Path::parse("DoubleNegate")).unwrap()).unwrap(), &TruthVal::new(Exp::parse("forall<Bool>((b: Bool) -> eq<Bool>(not(not(b)), b))").to_id(&env.local()).unwrap(), 0));
 }

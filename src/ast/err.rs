@@ -1,13 +1,14 @@
 use id::ErrID;
-use env::LocalID;
+use env::{ LocalID, Path };
 use envs::{ ExpVal, TypeVal, TruthVal };
 use tree::Tree;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ErrAst {
-    UnknownVar(String),
-    UnknownType(String),
-    UnknownTruth(String),
+    UnknownVar(Path),
+    UnknownType(Path),
+    UnknownTruth(Path),
+    UndefinedPath(Path),
     ErrID(ErrID),
 }
 

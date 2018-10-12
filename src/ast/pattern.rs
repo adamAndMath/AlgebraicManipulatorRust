@@ -1,4 +1,5 @@
 use predef::*;
+use env::Path;
 use envs::LocalEnvs;
 use super::{ Type, ErrAst, ToID };
 use id::renamed::{ TypeID, PatternID, ErrID };
@@ -6,8 +7,8 @@ use id::renamed::{ TypeID, PatternID, ErrID };
 #[derive(Debug)]
 pub enum Pattern {
     Var(String, Type),
-    Atom(String, Vec<Type>),
-    Comp(String, Vec<Type>, Box<Pattern>),
+    Atom(Path, Vec<Type>),
+    Comp(Path, Vec<Type>, Box<Pattern>),
     Tuple(Vec<Pattern>),
 }
 
