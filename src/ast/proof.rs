@@ -15,8 +15,8 @@ impl<'f> ToID<'f> for TruthRef<'f> {
     type To = TruthRefID;
     fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<TruthRefID, ErrAst<'f>> {
         let id = match self.name.as_ref() {
-            [n] if *n == "def" => RefType::Def,//TODO
-            [n] if *n == "match" => RefType::Match,
+            ["def"] => RefType::Def,
+            ["match"] => RefType::Match,
             _ => RefType::Ref(env.truth.get_id(&self.name).map_err(ErrAst::UnknownTruth)?),
         };
         let gen: Vec<_> = self.gen.to_id(env)?;
