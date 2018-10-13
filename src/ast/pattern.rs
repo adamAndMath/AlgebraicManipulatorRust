@@ -47,21 +47,14 @@ impl<'f> ToID<'f> for Pattern<'f> {
     }
 }
 
-impl<'f, 'a, T: ToID<'f>> ToID<'f> for (&'a Pattern<'f>, &'a T) {
+impl<'f, T: ToID<'f>> ToID<'f> for (Pattern<'f>, T) {
     type To = (PatternID, T::To);
-    fn to_id<'b>(&self, env: &LocalEnvs<'f, 'b>) -> Result<(PatternID, T::To), ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
         let (p, e) = self;
         let ns = p.bound();
         let p = p.to_id(env)?;
         let ps = ns.into_iter().zip(p.bound()).collect();
         Ok((p, e.to_id(&env.scope(ps))?))
-    }
-}
-
-impl<'f, T: ToID<'f>> ToID<'f> for (Pattern<'f>, T) {
-    type To = (PatternID, T::To);
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
-        (&self.0, &self.1).to_id(env)
     }
 }
 
