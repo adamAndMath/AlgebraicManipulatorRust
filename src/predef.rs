@@ -54,15 +54,15 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>, Vec<TruthVal>) {
 }
 
 pub fn alias_predef(env: &mut Envs) {
-    env.exp.alias("true".to_owned(), TRUE_ID.into());
-    env.exp.alias("false".to_owned(), FALSE_ID.into());
-    env.exp.alias("exists".to_owned(), EXISTS_ID.into());
-    env.exp.alias("forall".to_owned(), FORALL_ID.into());
-    env.exp.alias("eq".to_owned(), EQ_ID.into());
+    env.exp.alias("true", TRUE_ID.into());
+    env.exp.alias("false", FALSE_ID.into());
+    env.exp.alias("exists", EXISTS_ID.into());
+    env.exp.alias("forall", FORALL_ID.into());
+    env.exp.alias("eq", EQ_ID.into());
 
-    env.ty.alias("Bool".to_owned(), BOOL_ID.into());
+    env.ty.alias("Bool", BOOL_ID.into());
 
-    env.truth.alias("ID".to_owned(), ID_ID.into());
+    env.truth.alias("ID", ID_ID.into());
 }
 
 pub fn get_fn_types(ty: Type) -> Result<(Type, Type), ErrID> {

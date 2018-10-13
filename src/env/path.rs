@@ -1,28 +1,28 @@
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub struct Path(Vec<String>);
+pub struct Path<'f>(Vec<&'f str>);
 
-impl Path {
-    pub fn new(v: Vec<String>) -> Self {
+impl<'f> Path<'f> {
+    pub fn new(v: Vec<&'f str>) -> Self {
         Path(v)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &String> {
-        self.0.iter()
+    pub fn iter(&self) -> impl Iterator<Item = &str> {
+        self.0.iter().map(|s|*s)
     }
 
-    pub fn name(&self) -> String {
-        self.0[self.0.len() - 1].clone()
+    pub fn name(&self) -> &'f str {
+        self.0[self.0.len() - 1]
     }
 }
 
-impl From<String> for Path {
-    fn from(name: String) -> Self {
+impl<'f> From<&'f str> for Path<'f> {
+    fn from(name: &'f str) -> Self {
         Path(vec![name])
     }
 }
 
-impl AsRef<[String]> for Path {
-    fn as_ref(&self) -> &[String] {
+impl<'f> AsRef<[&'f str]> for Path<'f> {
+    fn as_ref(&self) -> &[&'f str] {
         &self.0
     }
 }

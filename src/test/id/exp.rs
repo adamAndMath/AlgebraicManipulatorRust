@@ -8,10 +8,10 @@ fn type_check() {
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
 
-    let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
-    let zero_id = env.exp.add("Zero".to_owned(), ExpVal::new_empty(type_id!(nat_id), 0));
+    let nat_id = env.ty.add("Nat", TypeVal::new(vec!()));
+    let zero_id = env.exp.add("Zero", ExpVal::new_empty(type_id!(nat_id), 0));
     env.ty.get_mut(nat_id).unwrap().push_atom(zero_id);
-    let succ_id = env.exp.add("Succ".to_owned(), ExpVal::new_empty(type_id!(FN_ID[-nat_id, +nat_id]), 0));
+    let succ_id = env.exp.add("Succ", ExpVal::new_empty(type_id!(FN_ID[-nat_id, +nat_id]), 0));
     env.ty.get_mut(nat_id).unwrap().push_comp(succ_id);
 
     let env = env.local();

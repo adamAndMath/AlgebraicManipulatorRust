@@ -5,16 +5,16 @@ use super::{ Type, ErrAst, ToID };
 use id::renamed::{ TypeID, PatternID, ErrID };
 
 #[derive(Debug)]
-pub enum Pattern {
-    Var(String, Type),
-    Atom(Path, Vec<Type>),
-    Comp(Path, Vec<Type>, Box<Pattern>),
-    Tuple(Vec<Pattern>),
+pub enum Pattern<'f> {
+    Var(&'f str, Type<'f>),
+    Atom(Path<'f>, Vec<Type<'f>>),
+    Comp(Path<'f>, Vec<Type<'f>>, Box<Pattern<'f>>),
+    Tuple(Vec<Pattern<'f>>),
 }
 
-impl ToID for Pattern {
+impl<'f> ToID<'f> for Pattern<'f> {
     type To = PatternID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<PatternID, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<PatternID, ErrAst<'f>> {
         Ok(match self {
             Pattern::Var(_, ty) => PatternID::Var(ty.to_id(env)?),
             Pattern::Atom(n, gs) => {
@@ -47,9 +47,9 @@ impl ToID for Pattern {
     }
 }
 
-impl<'a, T: ToID> ToID for (&'a Pattern, &'a T) {
+impl<'f, 'a, T: ToID<'f>> ToID<'f> for (&'a Pattern<'f>, &'a T) {
     type To = (PatternID, T::To);
-    fn to_id(&self, env: &LocalEnvs) -> Result<(PatternID, T::To), ErrAst> {
+    fn to_id<'b>(&self, env: &LocalEnvs<'f, 'b>) -> Result<(PatternID, T::To), ErrAst<'f>> {
         let (p, e) = self;
         let ns = p.bound();
         let p = p.to_id(env)?;
@@ -58,17 +58,17 @@ impl<'a, T: ToID> ToID for (&'a Pattern, &'a T) {
     }
 }
 
-impl<T: ToID> ToID for (Pattern, T) {
+impl<'f, T: ToID<'f>> ToID<'f> for (Pattern<'f>, T) {
     type To = (PatternID, T::To);
-    fn to_id(&self, env: &LocalEnvs) -> Result<(PatternID, T::To), ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
         (&self.0, &self.1).to_id(env)
     }
 }
 
-impl Pattern {
-    pub fn bound(&self) -> Vec<String> {
+impl<'f> Pattern<'f> {
+    pub fn bound(&self) -> Vec<&'f str> {
         match self {
-            Pattern::Var(n, _) => vec![n.clone()],
+            Pattern::Var(n, _) => vec![n],
             Pattern::Atom(_, _) => vec![],
             Pattern::Comp(_, _, p) => p.bound(),
             Pattern::Tuple(v) => v.into_iter().flat_map(|p|p.bound()).collect()

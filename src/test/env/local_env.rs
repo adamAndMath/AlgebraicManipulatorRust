@@ -25,7 +25,7 @@ fn add_data_to_empty_env() {
     {
         let env = Env::new(&mut data);
         let env = LocalEnv::new(&env);
-        let env = env.scope(vec!(("a".to_owned(), "1"), ("b".to_owned(), "2"), ("c".to_owned(), "3")));
+        let env = env.scope(vec!(("a", "1"), ("b", "2"), ("c", "3")));
 
         assert_eq!(env.get_id(&Path::parse("a")), Ok(LocalID::new(0)));
         assert_eq!(env.get_id(&Path::parse("b")), Ok(LocalID::new(1)));
@@ -46,9 +46,9 @@ fn add_data_in_and_after_scope() {
         let env = Env::new(&mut data);
         let env = LocalEnv::new(&env);
         {
-            let scope1 = env.scope(vec![("x".to_owned(), "1st"), ("y".to_owned(), "2nd")]);
+            let scope1 = env.scope(vec![("x", "1st"), ("y", "2nd")]);
             {
-                let scope2 = scope1.scope(vec![("x".to_owned(), "3rd")]);
+                let scope2 = scope1.scope(vec![("x", "3rd")]);
                 assert_eq!(scope2.get_id(&Path::parse("x")).map(|id|scope2.get(id)), Ok(Ok(&"3rd")));
                 assert_eq!(scope2.get_id(&Path::parse("y")).map(|id|scope2.get(id)), Ok(Ok(&"2nd")));
             }

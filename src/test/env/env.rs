@@ -22,9 +22,9 @@ fn add_data_to_empty_env() {
     let mut data = Vec::<&str>::new();
     {
         let mut env = Env::new(&mut data);
-        env.add("a".to_owned(), "1");
-        env.add("b".to_owned(), "2");
-        env.add("c".to_owned(), "3");
+        env.add("a", "1");
+        env.add("b", "2");
+        env.add("c", "3");
 
         assert_eq!(env.get_id(&Path::parse("a")), Ok(ID::new(0)));
         assert_eq!(env.get_id(&Path::parse("b")), Ok(ID::new(1)));
@@ -43,22 +43,22 @@ fn add_data_in_and_after_scope() {
     let mut data = vec!("Not named");
     {
         let mut env = Env::new(&mut data);
-        env.add("x".to_owned(), "1st");
+        env.add("x", "1st");
         {
             let mut scope1 = env.child_scope();
-            scope1.add("y".to_owned(), "2nd");
+            scope1.add("y", "2nd");
             {
                 let mut scope2 = scope1.child_scope();
-                scope2.add("x".to_owned(), "3rd");
+                scope2.add("x", "3rd");
                 assert_eq!(scope2.get_id(&Path::parse("x")).map(|id|scope2.get(id)), Ok(Ok(&"3rd")));
                 assert_eq!(scope2.get_id(&Path::parse("y")).map(|id|scope2.get(id)), Err(Path::parse("y")));
             }
-            scope1.add("y".to_owned(), "4th");
+            scope1.add("y", "4th");
             assert_eq!(scope1.get_id(&Path::parse("x")).map(|id|scope1.get(id)), Err(Path::parse("x")));
             assert_eq!(scope1.get_id(&Path::parse("y")).map(|id|scope1.get(id)), Ok(Ok(&"4th")));
         }
         
-        env.add("z".to_owned(), "5th");
+        env.add("z", "5th");
         assert_eq!(env.get_id(&Path::parse("x")).map(|id|env.get(id)), Ok(Ok(&"1st")));
         assert_eq!(env.get_id(&Path::parse("y")), Err(Path::parse("y")));
         assert_eq!(env.get_id(&Path::parse("z")).map(|id|env.get(id)), Ok(Ok(&"5th")));
@@ -71,7 +71,7 @@ fn add_data_in_and_after_scope() {
 fn alias_unnamed_data() {
     let mut data = vec!("Not named");
     let mut env = Env::new(&mut data);
-    env.alias("name".to_owned(), ID::new(0).into());
+    env.alias("name", ID::new(0).into());
     assert_eq!(env.get_id(&Path::parse("name")), Ok(ID::new(0)));
     assert_eq!(env.get(ID::new(0)), Ok(&"Not named"));
 }

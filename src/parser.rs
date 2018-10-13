@@ -11,57 +11,58 @@ use ast::*;
 #[grammar = "alg.pest"]
 struct AlgParser;
 
-pub fn parse_file(file: &str) -> Vec<Element> {
-    match AlgParser::parse(Rule::file, file).map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect()) {
+pub fn parse_file<'f>(file: &'f str) -> Vec<Element<'f>> {
+    let pairs = AlgParser::parse(Rule::file, file);
+    match pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect()) {
         Ok(r) => r,
         Err(e) => panic!("{}", e),
     }
 }
 
-pub trait Parse: Sized {
+pub trait Parse<'f>: Sized {
     const R: Rule;
-    fn parse(file: &str) -> Self {
+    fn parse(file: &'f str) -> Self {
         match AlgParser::parse(Self::R, file).map(|mut p|Self::parse_pair(p.next().unwrap())) {
             Ok(r) => r,
             Err(e) => panic!("{}", e),
         }
     }
 
-    fn parse_pair(pair: Pair<Rule>) -> Self;
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self;
 }
 
-fn parse<T: Parse>(pairs: &mut Iterator<Item = Pair<Rule>>) -> T {
+fn parse<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f, Rule>>) -> T {
     T::parse_pair(pairs.next().unwrap())
 }
 
-fn parse_vec<T: Parse>(pairs: &mut Iterator<Item = Pair<Rule>>) -> Vec<T> {
+fn parse_vec<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f, Rule>>) -> Vec<T> {
     pairs.next().unwrap().into_inner().map(T::parse_pair).collect()
 }
 
-fn parse_t2<T: Parse, U: Parse>(pair: Pair<Rule>) -> (T, U) {
+fn parse_t2<'f, T: Parse<'f>, U: Parse<'f>>(pair: Pair<'f, Rule>) -> (T, U) {
     let mut inner = pair.into_inner();
     let t = T::parse_pair(inner.next().unwrap());
     let u = U::parse_pair(inner.next().unwrap());
     (t, u)
 }
 
-impl Parse for String {
+impl<'f> Parse<'f> for &'f str {
     const R: Rule = Rule::name;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
-        pair.as_str().to_owned()
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+        pair.as_str()
     }
 }
 
-impl Parse for usize {
+impl<'f> Parse<'f> for usize {
     const R: Rule = Rule::number;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         pair.as_str().parse().unwrap()
     }
 }
 
-impl Parse for TreeChar {
+impl<'f> Parse<'f> for TreeChar {
     const R: Rule = Rule::tree_char;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_str() {
             "f" => TreeChar::Func,
             "t" => TreeChar::Tuple,
@@ -70,9 +71,9 @@ impl Parse for TreeChar {
     }
 }
 
-impl Parse for Direction {
+impl<'f> Parse<'f> for Direction {
     const R: Rule = Rule::truth_dir;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_str() {
             "." => Direction::Forwards,
             "~" => Direction::Backwards,
@@ -81,9 +82,9 @@ impl Parse for Direction {
     }
 }
 
-impl Parse for Variance {
+impl<'f> Parse<'f> for Variance {
     const R: Rule = Rule::variance;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_str() {
             "+" => Variance::Covariant,
             "-" => Variance::Contravariant,
@@ -93,9 +94,9 @@ impl Parse for Variance {
     }
 }
 
-impl Parse for Tree {
+impl<'f> Parse<'f> for Tree {
     const R: Rule = Rule::tree;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::tree => pair.into_inner().map(Tree::parse_pair).fold(Tree::default(), |a,b|a*b),
             Rule::tree_path => pair.into_inner().map(Tree::parse_pair).fold(Tree::default(), |a,b|a+b),
@@ -106,17 +107,17 @@ impl Parse for Tree {
     }
 }
 
-impl Parse for Path {
+impl<'f> Parse<'f> for Path<'f> {
     const R: Rule = Rule::path;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         if pair.as_rule() != Rule::path { unreachable!("{:?}", pair.as_rule()) }
-        Path::new(pair.into_inner().map(String::parse_pair).collect())
+        Path::new(pair.into_inner().map(Parse::parse_pair).collect())
     }
 }
 
-impl Parse for Type {
+impl<'f> Parse<'f> for Type<'f> {
     const R: Rule = Rule::ty;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::ty_gen => {
                 let mut inner = pair.into_inner();
@@ -137,9 +138,9 @@ impl Parse for Type {
     }
 }
 
-impl Parse for Pattern {
+impl<'f> Parse<'f> for Pattern<'f> {
     const R: Rule = Rule::pattern;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::pattern_var => {
                 let mut inner = pair.into_inner();
@@ -173,9 +174,9 @@ impl Parse for Pattern {
     }
 }
 
-impl Parse for Exp {
+impl<'f> Parse<'f> for Exp<'f> {
     const R: Rule = Rule::exp;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::exp_var => {
                 let mut inner = pair.into_inner();
@@ -203,9 +204,9 @@ impl Parse for Exp {
     }
 }
 
-impl Parse for TruthRef {
+impl<'f> Parse<'f> for TruthRef<'f> {
     const R: Rule = Rule::truth_ref;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         let mut inner = pair.into_inner();
         let name = parse(&mut inner);
         let gen = parse_vec(&mut inner);
@@ -214,9 +215,9 @@ impl Parse for TruthRef {
     }
 }
 
-impl Parse for (Direction, TruthRef, Tree) {
+impl<'f> Parse<'f> for (Direction, TruthRef<'f>, Tree) {
     const R: Rule = Rule::substitute;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         let mut inner = pair.into_inner();
         let dir = parse(&mut inner);
         let truth = parse(&mut inner);
@@ -225,9 +226,9 @@ impl Parse for (Direction, TruthRef, Tree) {
     }
 }
 
-impl Parse for Proof {
+impl<'f> Parse<'f> for Proof<'f> {
     const R: Rule = Rule::proof;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::proof_sequence => {
                 let mut inner = pair.into_inner();
@@ -252,9 +253,9 @@ impl Parse for Proof {
     }
 }
 
-impl Parse for Element {
+impl<'f> Parse<'f> for Element<'f> {
     const R: Rule = Rule::element;
-    fn parse_pair(pair: Pair<Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
         match pair.as_rule() {
             Rule::elm_mod => {
                 let mut inner = pair.into_inner();

@@ -9,9 +9,9 @@ fn to_id() {
     let (mut exps, mut tys, mut truths) = predef();
     let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
     
-    let a_id = env.ty.add("A".to_owned(), TypeVal::new(vec!()));
-    let b_id = env.ty.add("B".to_owned(), TypeVal::new(vec!()));
-    let c_id = env.ty.add("C".to_owned(), TypeVal::new(vec!()));
+    let a_id = env.ty.add("A", TypeVal::new(vec!()));
+    let b_id = env.ty.add("B", TypeVal::new(vec!()));
+    let c_id = env.ty.add("C", TypeVal::new(vec!()));
 
     let env = env.local();
 

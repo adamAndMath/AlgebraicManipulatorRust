@@ -5,18 +5,18 @@ use id::renamed::{ TruthRefID, ProofID, Direction, RefType };
 use tree::Tree;
 
 #[derive(Debug)]
-pub struct TruthRef {
-    name: Path,
-    gen: Vec<Type>,
-    par: Option<Exp>,
+pub struct TruthRef<'f> {
+    name: Path<'f>,
+    gen: Vec<Type<'f>>,
+    par: Option<Exp<'f>>,
 }
 
-impl ToID for TruthRef {
+impl<'f> ToID<'f> for TruthRef<'f> {
     type To = TruthRefID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<TruthRefID, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<TruthRefID, ErrAst<'f>> {
         let id = match self.name.as_ref() {
-            [n] if n == "def" => RefType::Def,
-            [n] if n == "match" => RefType::Match,
+            [n] if *n == "def" => RefType::Def,//TODO
+            [n] if *n == "match" => RefType::Match,
             _ => RefType::Ref(env.truth.get_id(&self.name).map_err(ErrAst::UnknownTruth)?),
         };
         let gen: Vec<_> = self.gen.to_id(env)?;
@@ -25,22 +25,22 @@ impl ToID for TruthRef {
     }
 }
 
-impl TruthRef {
-    pub fn new(name: Path, gen: Vec<Type>, par: Option<Exp>) -> Self {
+impl<'f> TruthRef<'f> {
+    pub fn new(name: Path<'f>, gen: Vec<Type<'f>>, par: Option<Exp<'f>>) -> Self {
         TruthRef { name, gen, par }
     }
 }
 
 #[derive(Debug)]
-pub enum Proof {
-    Sequence(TruthRef, Vec<(Direction, TruthRef, Tree)>),
-    Block(Vec<(String, Proof)>, Box<Proof>),
-    Match(Exp, Vec<(Pattern, Proof)>),
+pub enum Proof<'f> {
+    Sequence(TruthRef<'f>, Vec<(Direction, TruthRef<'f>, Tree)>),
+    Block(Vec<(&'f str, Proof<'f>)>, Box<Proof<'f>>),
+    Match(Exp<'f>, Vec<(Pattern<'f>, Proof<'f>)>),
 }
 
-impl ToID for Proof {
+impl<'f> ToID<'f> for Proof<'f> {
     type To = ProofID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<ProofID, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<ProofID, ErrAst<'f>> {
         Ok(match self {
             Proof::Sequence(initial, rest) => ProofID::Sequence(initial.to_id(env)?, rest.into_iter().map(|(d,p,t)|Ok((*d, p.to_id(env)?, t.clone()))).collect::<Result<_,ErrAst>>()?),
             Proof::Block(vars, end) => unimplemented!(),

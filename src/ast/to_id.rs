@@ -1,28 +1,28 @@
 use envs::LocalEnvs;
 use ast::ErrAst;
 
-pub trait ToID {
+pub trait ToID<'f> {
     type To;
-    fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst>;
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<Self::To, ErrAst<'f>>;
 }
 
-impl<T: ToID> ToID for Box<T> {
+impl<'f, T: ToID<'f>> ToID<'f> for Box<T> {
     type To = Box<T::To>;
-    fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<Self::To, ErrAst<'f>> {
         Ok(Box::new((&**self).to_id(env)?))
     }
 }
 
-impl<T: ToID> ToID for Option<T> {
+impl<'f, T: ToID<'f>> ToID<'f> for Option<T> {
     type To = Option<T::To>;
-    fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<Self::To, ErrAst<'f>> {
         self.as_ref().map(|e|e.to_id(env)).transpose()
     }
 }
 
-impl<T: ToID> ToID for Vec<T> {
+impl<'f, T: ToID<'f>> ToID<'f> for Vec<T> {
     type To = Vec<T::To>;
-    fn to_id(&self, env: &LocalEnvs) -> Result<Self::To, ErrAst> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<Self::To, ErrAst<'f>> {
         self.into_iter().map(|e|e.to_id(env)).collect()
     }
 }

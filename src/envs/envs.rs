@@ -1,6 +1,8 @@
 use predef::*;
 use env::{ Env, LocalEnv };
 use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
+use std::fs::read_to_string;
+use parser::parse_file;
 
 #[derive(Debug)]
 pub struct Envs<'a> {
@@ -20,7 +22,7 @@ impl<'a> Envs<'a> {
         }
     }
 
-    pub fn child_scope<E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: String, f: F) -> Result<(), E> {
+    pub fn child_scope<E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: &str, f: F) -> Result<(), E> {
         let (exp, ty, truth) = {
             let mut child = Envs {
                 path: format!("{}\\{}", self.path, n),
@@ -32,17 +34,30 @@ impl<'a> Envs<'a> {
             f(&mut child)?;
             (child.exp.to_val(), child.ty.to_val(), child.truth.to_val())
         };
-        self.exp.add_val(n.clone(), exp);
-        self.ty.add_val(n.clone(), ty);
-        self.truth.add_val(n.clone(), truth);
+        self.exp.add_val(n, exp);
+        self.ty.add_val(n, ty);
+        self.truth.add_val(n, truth);
         Ok(())
     }
 
-    pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {
+    pub fn local<'f, 'b>(&'b self) -> LocalEnvs<'f, 'b> where 'a: 'b {
         LocalEnvs {
             exp: LocalEnv::new(&self.exp),
             ty: LocalEnv::new(&self.ty),
             truth: LocalEnv::new(&self.truth),
+        }
+    }
+
+    pub fn read_file(&mut self) {
+        let file = read_to_string(format!("{}.alg", self.path.clone()))
+            .or_else(|_|read_to_string(format!("{}\\mod.alg", self.path)))
+            .expect(&format!("{}", self.path));
+
+        let file = &file;
+        let elements = parse_file(file);
+
+        for element in elements {
+            element.define(self).unwrap();
         }
     }
 }
