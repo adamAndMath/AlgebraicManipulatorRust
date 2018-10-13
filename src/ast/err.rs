@@ -1,6 +1,8 @@
 use id::ErrID;
 use env::{ LocalID, Path };
 use envs::{ ExpVal, TypeVal, TruthVal };
+use parser::Error;
+use pest::error::ErrorVariant;
 use tree::Tree;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -32,5 +34,17 @@ impl_from! {
 impl<'f> From<ErrID> for ErrAst<'f> {
     fn from(err: ErrID) -> Self {
         ErrAst::ErrID(err)
+    }
+}
+
+impl<'f> Into<Error> for ErrAst<'f> {
+    fn into(self) -> Error {
+        match self {
+            ErrAst::UnknownVar(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown variable".to_owned() }, p.as_span()),
+            ErrAst::UnknownType(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown type".to_owned() }, p.as_span()),
+            ErrAst::UnknownTruth(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown truth".to_owned() }, p.as_span()),
+            ErrAst::UndefinedPath(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Path doesn't exist".to_owned() }, p.as_span()),
+            e => panic!("{:?}", e),
+        }
     }
 }

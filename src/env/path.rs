@@ -15,6 +15,10 @@ impl<'f> Path<'f> {
     pub fn name(&self) -> &'f str {
         self.1[self.1.len() - 1]
     }
+
+    pub fn as_span(&self) -> Span<'f> {
+        self.0.clone()
+    }
 }
 
 impl<'f> PartialEq for Path<'f> {

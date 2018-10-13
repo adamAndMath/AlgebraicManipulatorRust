@@ -1,6 +1,6 @@
-use pest::{ Parser, Span };
+use pest::Parser;
 use pest::iterators::Pair as PestPair;
-use pest::error::Error;
+use pest::error::Error as PestError;
 use tree::{ Tree, TreeChar };
 use variance::Variance;
 use id::Direction;
@@ -12,13 +12,11 @@ use ast::*;
 struct AlgParser;
 
 type Pair<'f> = PestPair<'f, Rule>;
+pub type Error = PestError<Rule>;
 
-pub fn parse_file<'f>(file: &'f str) -> Vec<Element<'f>> {
+pub fn parse_file<'f>(file: &'f str) -> Result<Vec<Element<'f>>, Error> {
     let pairs = AlgParser::parse(Rule::file, file);
-    match pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect()) {
-        Ok(r) => r,
-        Err(e) => panic!("{}", e),
-    }
+    pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect())
 }
 
 pub trait Parse<'f>: Sized {

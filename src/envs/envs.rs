@@ -2,7 +2,7 @@ use predef::*;
 use env::{ Env, LocalEnv };
 use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 use std::fs::read_to_string;
-use parser::parse_file;
+use parser::{ parse_file, Error };
 
 #[derive(Debug)]
 pub struct Envs<'a> {
@@ -49,15 +49,22 @@ impl<'a> Envs<'a> {
     }
 
     pub fn read_file(&mut self) {
+        if let Err(e) = self.try_read_file() {
+            panic!("{}", e.with_path(&self.path));
+        }
+    }
+
+    fn try_read_file(&mut self) -> Result<(), Error> {
         let file = read_to_string(format!("{}.alg", self.path.clone()))
             .or_else(|_|read_to_string(format!("{}\\mod.alg", self.path)))
             .expect(&format!("{}", self.path));
 
         let file = &file;
-        let elements = parse_file(file);
+        let elements = parse_file(file)?;
 
         for element in elements {
-            element.define(self).unwrap();
+            element.define(self).map_err(|e|e.into())?;
         }
+        Ok(())
     }
 }
