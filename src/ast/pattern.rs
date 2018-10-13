@@ -14,7 +14,7 @@ pub enum Pattern<'f> {
 
 impl<'f> ToID<'f> for Pattern<'f> {
     type To = PatternID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<PatternID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<PatternID, ErrAst<'f>> {
         Ok(match self {
             Pattern::Var(_, ty) => PatternID::Var(ty.to_id(env)?),
             Pattern::Atom(n, gs) => {
@@ -49,7 +49,7 @@ impl<'f> ToID<'f> for Pattern<'f> {
 
 impl<'f, T: ToID<'f>> ToID<'f> for (Pattern<'f>, T) {
     type To = (PatternID, T::To);
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
         let (p, e) = self;
         let ns = p.bound();
         let p = p.to_id(env)?;

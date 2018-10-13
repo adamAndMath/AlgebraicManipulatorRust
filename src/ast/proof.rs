@@ -13,7 +13,7 @@ pub struct TruthRef<'f> {
 
 impl<'f> ToID<'f> for TruthRef<'f> {
     type To = TruthRefID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<TruthRefID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<TruthRefID, ErrAst<'f>> {
         let id = match self.name.as_ref() {
             ["def"] => RefType::Def,
             ["match"] => RefType::Match,
@@ -40,7 +40,7 @@ pub enum Proof<'f> {
 
 impl<'f> ToID<'f> for Proof<'f> {
     type To = ProofID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<ProofID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<ProofID, ErrAst<'f>> {
         Ok(match self {
             Proof::Sequence(initial, rest) => ProofID::Sequence(initial.to_id(env)?, rest.into_iter().map(|(d,p,t)|Ok((*d, p.to_id(env)?, t.clone()))).collect::<Result<_,ErrAst>>()?),
             Proof::Block(vars, end) => unimplemented!(),

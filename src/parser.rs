@@ -1,5 +1,5 @@
-use pest::Parser;
-use pest::iterators::Pair;
+use pest::{ Parser, Span };
+use pest::iterators::Pair as PestPair;
 use pest::error::Error;
 use tree::{ Tree, TreeChar };
 use variance::Variance;
@@ -10,6 +10,8 @@ use ast::*;
 #[derive(Parser)]
 #[grammar = "alg.pest"]
 struct AlgParser;
+
+type Pair<'f> = PestPair<'f, Rule>;
 
 pub fn parse_file<'f>(file: &'f str) -> Vec<Element<'f>> {
     let pairs = AlgParser::parse(Rule::file, file);
@@ -28,18 +30,18 @@ pub trait Parse<'f>: Sized {
         }
     }
 
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self;
+    fn parse_pair(pair: Pair<'f>) -> Self;
 }
 
-fn parse<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f, Rule>>) -> T {
+fn parse<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f>>) -> T {
     T::parse_pair(pairs.next().unwrap())
 }
 
-fn parse_vec<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f, Rule>>) -> Vec<T> {
+fn parse_vec<'f, T: Parse<'f>>(pairs: &mut Iterator<Item = Pair<'f>>) -> Vec<T> {
     pairs.next().unwrap().into_inner().map(T::parse_pair).collect()
 }
 
-fn parse_t2<'f, T: Parse<'f>, U: Parse<'f>>(pair: Pair<'f, Rule>) -> (T, U) {
+fn parse_t2<'f, T: Parse<'f>, U: Parse<'f>>(pair: Pair<'f>) -> (T, U) {
     let mut inner = pair.into_inner();
     let t = T::parse_pair(inner.next().unwrap());
     let u = U::parse_pair(inner.next().unwrap());
@@ -48,21 +50,21 @@ fn parse_t2<'f, T: Parse<'f>, U: Parse<'f>>(pair: Pair<'f, Rule>) -> (T, U) {
 
 impl<'f> Parse<'f> for &'f str {
     const R: Rule = Rule::name;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         pair.as_str()
     }
 }
 
 impl<'f> Parse<'f> for usize {
     const R: Rule = Rule::number;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         pair.as_str().parse().unwrap()
     }
 }
 
 impl<'f> Parse<'f> for TreeChar {
     const R: Rule = Rule::tree_char;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_str() {
             "f" => TreeChar::Func,
             "t" => TreeChar::Tuple,
@@ -73,7 +75,7 @@ impl<'f> Parse<'f> for TreeChar {
 
 impl<'f> Parse<'f> for Direction {
     const R: Rule = Rule::truth_dir;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_str() {
             "." => Direction::Forwards,
             "~" => Direction::Backwards,
@@ -84,7 +86,7 @@ impl<'f> Parse<'f> for Direction {
 
 impl<'f> Parse<'f> for Variance {
     const R: Rule = Rule::variance;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_str() {
             "+" => Variance::Covariant,
             "-" => Variance::Contravariant,
@@ -96,7 +98,7 @@ impl<'f> Parse<'f> for Variance {
 
 impl<'f> Parse<'f> for Tree {
     const R: Rule = Rule::tree;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::tree => pair.into_inner().map(Tree::parse_pair).fold(Tree::default(), |a,b|a*b),
             Rule::tree_path => pair.into_inner().map(Tree::parse_pair).fold(Tree::default(), |a,b|a+b),
@@ -109,15 +111,16 @@ impl<'f> Parse<'f> for Tree {
 
 impl<'f> Parse<'f> for Path<'f> {
     const R: Rule = Rule::path;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
+        let span = pair.as_span();
         if pair.as_rule() != Rule::path { unreachable!("{:?}", pair.as_rule()) }
-        Path::new(pair.into_inner().map(Parse::parse_pair).collect())
+        Path::new(span, pair.into_inner().map(Parse::parse_pair).collect())
     }
 }
 
 impl<'f> Parse<'f> for Type<'f> {
     const R: Rule = Rule::ty;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::ty_gen => {
                 let mut inner = pair.into_inner();
@@ -140,7 +143,7 @@ impl<'f> Parse<'f> for Type<'f> {
 
 impl<'f> Parse<'f> for Pattern<'f> {
     const R: Rule = Rule::pattern;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::pattern_var => {
                 let mut inner = pair.into_inner();
@@ -176,7 +179,7 @@ impl<'f> Parse<'f> for Pattern<'f> {
 
 impl<'f> Parse<'f> for Exp<'f> {
     const R: Rule = Rule::exp;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::exp_var => {
                 let mut inner = pair.into_inner();
@@ -206,7 +209,7 @@ impl<'f> Parse<'f> for Exp<'f> {
 
 impl<'f> Parse<'f> for TruthRef<'f> {
     const R: Rule = Rule::truth_ref;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         let mut inner = pair.into_inner();
         let name = parse(&mut inner);
         let gen = parse_vec(&mut inner);
@@ -217,7 +220,7 @@ impl<'f> Parse<'f> for TruthRef<'f> {
 
 impl<'f> Parse<'f> for (Direction, TruthRef<'f>, Tree) {
     const R: Rule = Rule::substitute;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         let mut inner = pair.into_inner();
         let dir = parse(&mut inner);
         let truth = parse(&mut inner);
@@ -228,7 +231,7 @@ impl<'f> Parse<'f> for (Direction, TruthRef<'f>, Tree) {
 
 impl<'f> Parse<'f> for Proof<'f> {
     const R: Rule = Rule::proof;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::proof_sequence => {
                 let mut inner = pair.into_inner();
@@ -255,7 +258,7 @@ impl<'f> Parse<'f> for Proof<'f> {
 
 impl<'f> Parse<'f> for Element<'f> {
     const R: Rule = Rule::element;
-    fn parse_pair(pair: Pair<'f, Rule>) -> Self {
+    fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
             Rule::elm_mod => {
                 let mut inner = pair.into_inner();

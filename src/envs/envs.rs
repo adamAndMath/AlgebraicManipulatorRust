@@ -40,7 +40,7 @@ impl<'a> Envs<'a> {
         Ok(())
     }
 
-    pub fn local<'f, 'b>(&'b self) -> LocalEnvs<'f, 'b> where 'a: 'b {
+    pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {
         LocalEnvs {
             exp: LocalEnv::new(&self.exp),
             ty: LocalEnv::new(&self.ty),

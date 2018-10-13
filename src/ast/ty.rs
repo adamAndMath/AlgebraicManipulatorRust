@@ -11,7 +11,7 @@ pub enum Type<'f> {
 
 impl<'f> ToID<'f> for Type<'f> {
     type To = TypeID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<TypeID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<TypeID, ErrAst<'f>> {
         Ok(match self {
             Type::Gen(t, gs) => {
                 let id = env.ty.get_id(t).map_err(ErrAst::UnknownType)?;

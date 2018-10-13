@@ -13,7 +13,7 @@ pub enum Exp<'f> {
 
 impl<'f> ToID<'f> for Exp<'f> {
     type To = ExpID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'f, 'a>) -> Result<ExpID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<ExpID, ErrAst<'f>> {
         Ok(match self {
             Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x).map_err(ErrAst::UnknownVar)?, gs.to_id(env)?),
             Exp::Tuple(v) => ExpID::Tuple(v.to_id(env)?),
