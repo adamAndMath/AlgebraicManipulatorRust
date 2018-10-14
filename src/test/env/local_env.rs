@@ -45,7 +45,7 @@ fn add_data_in_and_after_scope() {
     let mut data = EnvData::new(vec![]);
     {
         let mut env = Env::new(&mut data);
-        env.add("static".to_owned(), "Static");
+        env.add("static", "Static");
         let env = LocalEnv::new(&env);
         {
             let scope1 = env.scope(vec![("x", "1st"), ("y", "2nd")]);

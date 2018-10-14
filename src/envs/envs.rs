@@ -13,7 +13,7 @@ pub struct Envs<'a> {
 }
 
 impl<'a> Envs<'a> {
-    pub fn new(path: String, exps: &'a mut Vec<ExpVal>, tys: &'a mut Vec<TypeVal>, truths: &'a mut Vec<TruthVal>) -> Self {
+    pub fn new(path: String, data: &'a mut EnvsData) -> Self {
         Envs {
             path,
             exp: Env::new(&mut data.exps),

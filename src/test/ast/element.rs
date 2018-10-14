@@ -63,8 +63,8 @@ fn enum_option() {
         assert_eq!(env.exp.get_id(&Path::parse("Some")), Err(Path::parse("Some")));
         let none_id = env.exp.get_id(&Path::parse("Option::None")).unwrap();
         let some_id = env.exp.get_id(&Path::parse("Option::Some")).unwrap();
-        assert_eq!(env.exp.get(none_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Type::parse("Option<Bool>").to_id(&env.local()).unwrap());
-        assert_eq!(env.exp.get(some_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Type::parse("fn<Bool, Option<Bool>>").to_id(&env.local()).unwrap());
+        assert_eq!(env.exp.get(none_id).ty(&[type_id!(BOOL_ID)]), Type::parse("Option<Bool>").to_id(&env.local()).unwrap());
+        assert_eq!(env.exp.get(some_id).ty(&[type_id!(BOOL_ID)]), Type::parse("fn<Bool, Option<Bool>>").to_id(&env.local()).unwrap());
     }
 
     assert_eq!(data.lens(), (lens.0+2, lens.1+1, lens.2));
@@ -80,7 +80,7 @@ fn letting() {
         Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
         Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get_id(&Path::parse("two")).map(|id|env.exp.get(id).unwrap()), env.exp.get_id(&Path::parse("two_marked")).map(|id|env.exp.get(id).unwrap()));
+        assert_eq!(env.exp.get_id(&Path::parse("two")).map(|id|env.exp.get(id)), env.exp.get_id(&Path::parse("two_marked")).map(|id|env.exp.get(id)));
     }
 
     assert_eq!(data.lens(), (lens.0+4, lens.1+1, lens.2));
