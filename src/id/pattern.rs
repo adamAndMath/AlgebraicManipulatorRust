@@ -16,8 +16,8 @@ impl TypeCheck for Pattern {
     fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
             Pattern::Var(ty) => ty.clone(),
-            Pattern::Atom(id, gs) => env.exp.get(*id)?.ty(gs),
-            Pattern::Comp(id, gs, p) => env.exp.get(*id)?.ty(gs).call_output(&p.type_check(env)?)?,
+            Pattern::Atom(id, gs) => env.exp.get(*id).ty(gs),
+            Pattern::Comp(id, gs, p) => env.exp.get(*id).ty(gs).call_output(&p.type_check(env)?)?,
             Pattern::Tuple(v) => Type::Tuple(v.type_check(env)?),
         })
     }

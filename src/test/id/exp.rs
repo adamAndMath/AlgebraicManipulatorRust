@@ -5,14 +5,14 @@ use id::renamed::{ TypeID, ExpID, TypeCheck };
 
 #[test]
 fn type_check() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new("".to_owned(), &mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new("".to_owned(), &mut data);
 
     let nat_id = env.ty.add("Nat", TypeVal::new(vec!()));
     let zero_id = env.exp.add("Zero", ExpVal::new_empty(type_id!(nat_id), 0));
-    env.ty.get_mut(nat_id).unwrap().push_atom(zero_id);
+    env.ty.get_mut(nat_id).push_atom(zero_id);
     let succ_id = env.exp.add("Succ", ExpVal::new_empty(type_id!(FN_ID[-nat_id, +nat_id]), 0));
-    env.ty.get_mut(nat_id).unwrap().push_comp(succ_id);
+    env.ty.get_mut(nat_id).push_comp(succ_id);
 
     let env = env.local();
 

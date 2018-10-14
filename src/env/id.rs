@@ -1,23 +1,33 @@
 use std::marker::PhantomData;
 
 #[derive(Debug)]
-pub struct ID<T: ?Sized>(pub usize, pub PhantomData<T>);
+pub enum ID<T: ?Sized> {
+    Predef(usize, PhantomData<T>),
+    Normal(usize, PhantomData<T>),
+}
 
 impl<T: ?Sized> ID<T> {
     pub fn new(id: usize) -> Self {
-        ID(id, PhantomData)
+        ID::Normal(id, PhantomData)
     }
 }
 
 impl<T: ?Sized> Clone for ID<T> {
     fn clone(&self) -> Self {
-        ID(self.0, PhantomData)
+        match self {
+            ID::Predef(id, p) => ID::Predef(*id, p.clone()),
+            ID::Normal(id, p) => ID::Normal(*id, p.clone()),
+        }
     }
 }
 
 impl<T: ?Sized> PartialEq for ID<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+        match (self, other) {
+            (ID::Predef(lhs, _), ID::Predef(rhs, _)) => lhs == rhs,
+            (ID::Normal(lhs, _), ID::Normal(rhs, _)) => lhs == rhs,
+            _ => false,
+        }
     }
 }
 

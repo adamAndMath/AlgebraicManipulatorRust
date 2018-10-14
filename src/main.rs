@@ -27,8 +27,8 @@ fn main() {
     args.next();
     let path = args.next().expect("expected file path");
 
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(path, &mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(path, &mut data);
     alias_predef(&mut env);
     env.read_file();
 }

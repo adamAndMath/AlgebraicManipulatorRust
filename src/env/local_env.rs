@@ -36,16 +36,16 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
         }
     }
 
-    pub fn get<I: Into<LocalID<T>>>(&self, id: I) -> Result<&T, LocalID<T>> {
+    pub fn get<I: Into<LocalID<T>>>(&self, id: I) -> &T {
         match (self, id.into()) {
-            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id).map_err(|id|id.into()),
-            (LocalEnv::Base(_), LocalID::Local(id, p)) => Err(LocalID::Local(id, p)),
+            (LocalEnv::Base(env), LocalID::Global(id)) => env.get(id),
+            (LocalEnv::Base(_), LocalID::Local(id, p)) => unreachable!(),
             (LocalEnv::Scope(env, _, _), LocalID::Global(id)) => env.get(LocalID::Global(id)),
             (LocalEnv::Scope(env, _, v), LocalID::Local(id, p)) =>
                 if v.len() > id {
-                    v.get(id).ok_or(LocalID::Local(id, p))
+                    &v[id]
                 } else {
-                    env.get(LocalID::Local(id - v.len(), p)).map_err(|id|id.push_local(PhantomData::<T>, v.len()))
+                    env.get(LocalID::Local(id - v.len(), p))
                 },
         }
     }
