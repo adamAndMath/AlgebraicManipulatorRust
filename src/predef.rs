@@ -15,7 +15,7 @@ pub const FN_ID: ID<TypeVal> = ID(1, PhantomData);
 
 pub const ID_ID: ID<TruthVal> = ID(0, PhantomData);
 
-pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>, Vec<TruthVal>) {
+pub fn predef() -> EnvsData {
     let mut bool_ty = TypeVal::new(vec![]);
     bool_ty.push_atom(ID::new(0));
     bool_ty.push_atom(ID::new(1));
@@ -35,22 +35,22 @@ pub fn predef() -> (Vec<ExpVal>, Vec<TypeVal>, Vec<TruthVal>) {
         (Covariant, Type::Gen(BOOL_ID.into(), vec![])),
     ]);
 
-    (
-        vec![
+    EnvsData {
+        exps: vec![
             ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![]), 0),
             ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![]), 0),
             ExpVal::new_empty(f_ty.clone(), 1),
             ExpVal::new_empty(f_ty.clone(), 1),
             ExpVal::new_empty(eq_ty, 1),
         ],
-        vec![
+        types: vec![
             bool_ty,
             TypeVal::new(vec![Contravariant, Covariant]),
         ],
-        vec![
+        truths: vec![
             TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Closure(vec![(Pattern::Var(Type::Gen(LocalID::new(0), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(LocalID::new(0), vec![]), Exp::Var(LocalID::new(0), vec![])]))))]))), 1)
         ],
-    )
+    }
 }
 
 pub fn alias_predef(env: &mut Envs) {

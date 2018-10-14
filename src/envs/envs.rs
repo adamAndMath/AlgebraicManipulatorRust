@@ -1,5 +1,5 @@
-use env::{ Env, LocalEnv, Path };
-use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
+use env::{ Env, LocalEnv };
+use super::{ EnvsData, LocalEnvs, ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]
 pub struct Envs<'a> {
@@ -9,11 +9,11 @@ pub struct Envs<'a> {
 }
 
 impl<'a> Envs<'a> {
-    pub fn new(exps: &'a mut Vec<ExpVal>, tys: &'a mut Vec<TypeVal>, truths: &'a mut Vec<TruthVal>) -> Self {
+    pub fn new(data: &'a mut EnvsData) -> Self {
         Envs {
-            exp: Env::new(exps),
-            ty: Env::new(tys),
-            truth: Env::new(truths),
+            exp: Env::new(&mut data.exps),
+            ty: Env::new(&mut data.types),
+            truth: Env::new(&mut data.truths),
         }
     }
 

@@ -7,8 +7,8 @@ use tree::*;
 
 #[test]
 fn succ_zero() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     env.ty.alias("fn".to_owned(), FN_ID.into());
 
     let nat_id = env.ty.add("Nat".to_owned(), TypeVal::new(vec!()));
@@ -28,8 +28,8 @@ fn succ_zero() {
 
 #[test]
 fn apply() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let e = exp!(forall((x: Bool) -> exists((y: Bool) -> eq(x, y)))).to_id(&mut env.local()).unwrap();
     let x = LocalID::new(1);

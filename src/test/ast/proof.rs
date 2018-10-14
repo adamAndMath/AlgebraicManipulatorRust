@@ -7,8 +7,8 @@ use tree::Tree;
 
 #[test]
 fn deref() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     let e_id = exp_id!(TRUE_ID);
     env.truth.add("a".to_owned(), TruthVal::new(e_id.clone(), 0));
     let p = proof!(a());
@@ -18,8 +18,8 @@ fn deref() {
 
 #[test]
 fn replace_nothing() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let e = exp!(forall((a: Bool) -> true));
     let e_id = e.to_id(&env.local()).unwrap();
@@ -31,8 +31,8 @@ fn replace_nothing() {
 
 #[test]
 fn replace() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let e = exp!(forall((a: Bool) -> a));
     let e_id = e.to_id(&env.local()).unwrap();
@@ -44,8 +44,8 @@ fn replace() {
 
 #[test]
 fn unwraping_var() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     env.exp.add("x".to_owned(), ExpVal::new(exp_id!(TRUE_ID), type_id!(BOOL_ID), 0));
     let e = exp!(forall((a: Bool) -> x));
@@ -58,8 +58,8 @@ fn unwraping_var() {
 
 #[test]
 fn unwraping_match() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let e = exp!({
         (true, true) => true,
@@ -81,8 +81,8 @@ fn unwraping_match() {
 
 #[test]
 fn unwraping_lambda_call() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let e = exp!(((a: Bool, b: Bool) -> b)(true, false));
     let e_id = e.to_id(&env.local()).unwrap();
@@ -94,8 +94,8 @@ fn unwraping_lambda_call() {
 
 #[test]
 fn unwraping_function_call() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     element!(fn f(a: Bool, b: Bool) = b).define(&mut env).unwrap();
     let e = exp!(f(true, false));
@@ -108,8 +108,8 @@ fn unwraping_function_call() {
 
 #[test]
 fn match_proof() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let x = env.exp.add("x".to_owned(), ExpVal::new_empty(type_id!(BOOL_ID), 0));
     let e = exp!({
@@ -130,8 +130,8 @@ fn match_proof() {
 
 #[test]
 fn id_call() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     let p = proof!(ID[Bool](true));
     let re = p.to_id(&env.local()).unwrap().execute(&env.local(), &MatchEnv::new());
@@ -140,8 +140,8 @@ fn id_call() {
 
 #[test]
 fn double_negate() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     alias_predef(&mut env);
     element!(fn not { true => false, false => true }).define(&mut env).unwrap();
     element!(

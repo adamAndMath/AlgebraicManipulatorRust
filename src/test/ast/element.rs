@@ -8,10 +8,10 @@ use id::renamed::TypeID;
 
 #[test]
 fn struct_empty() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let lens = (exps.len(), tys.len(), truths.len());
+    let mut data = predef();
+    let lens = data.lens();
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new(&mut data);
         element!(struct Test).define(&mut env).unwrap();
 
         let e_id = env.exp.get_id(&path!(Test)).unwrap();
@@ -23,15 +23,15 @@ fn struct_empty() {
         assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
     }
 
-    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+1, lens.1+1, lens.2));
+    assert_eq!(data.lens(), (lens.0+1, lens.1+1, lens.2));
 }
 
 #[test]
 fn struct_tuple() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let lens = (exps.len(), tys.len(), truths.len());
+    let mut data = predef();
+    let lens = data.lens();
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new(&mut data);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         element!(struct A).define(&mut env).unwrap();
         element!(struct B).define(&mut env).unwrap();
@@ -46,15 +46,15 @@ fn struct_tuple() {
         assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
     }
 
-    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+3, lens.2));
+    assert_eq!(data.lens(), (lens.0+3, lens.1+3, lens.2));
 }
 
 #[test]
 fn enum_option() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let lens = (exps.len(), tys.len(), truths.len());
+    let mut data = predef();
+    let lens = data.lens();
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new(&mut data);
         alias_predef(&mut env);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         element!(enum Option[T] { Some(T), None }).define(&mut env).unwrap();
@@ -67,15 +67,15 @@ fn enum_option() {
         assert_eq!(env.exp.get(some_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Ok(ttype!(fn[Bool, Option[Bool]]).to_id(&env.local()).unwrap()));
     }
 
-    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+2, lens.1+1, lens.2));
+    assert_eq!(data.lens(), (lens.0+2, lens.1+1, lens.2));
 }
 
 #[test]
 fn letting() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let lens = (exps.len(), tys.len(), truths.len());
+    let mut data = predef();
+    let lens = data.lens();
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new(&mut data);
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).unwrap();
         element!(let two = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
         element!(let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
@@ -83,15 +83,15 @@ fn letting() {
         assert_eq!(env.exp.get_id(&path!(two)).map(|id|env.exp.get(id).unwrap()), env.exp.get_id(&path!(two_marked)).map(|id|env.exp.get(id).unwrap()));
     }
 
-    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+4, lens.1+1, lens.2));
+    assert_eq!(data.lens(), (lens.0+4, lens.1+1, lens.2));
 }
 
 #[test]
 fn func() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let lens = (exps.len(), tys.len(), truths.len());
+    let mut data = predef();
+    let lens = data.lens();
     {
-        let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+        let mut env = Envs::new(&mut data);
         env.ty.alias("fn".to_owned(), FN_ID.into());
         element!(enum Nat { Zero, Succ(Nat) }).define(&mut env).expect("Failed to define Nat");
         element!(
@@ -115,13 +115,13 @@ fn func() {
         assert_eq!(add.ty(&[]), ttype!(fn[(Nat, Nat), Nat]).to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
     }
     
-    assert_eq!((exps.len(), tys.len(), truths.len()), (lens.0+3, lens.1+1, lens.2));
+    assert_eq!(data.lens(), (lens.0+3, lens.1+1, lens.2));
 }
 
 #[test]
 fn lists() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     
     element!(enum List[+T] { Nil, Cons(T, List[T])}).define(&mut env).unwrap();
     element!(fn prepend[T](e: T, l: List[T]) -> List[T] = List::Cons[T](e, l)).define(&mut env).unwrap();

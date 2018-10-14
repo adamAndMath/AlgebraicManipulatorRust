@@ -6,8 +6,8 @@ use ast::{ Type, ToID };
 
 #[test]
 fn to_id() {
-    let (mut exps, mut tys, mut truths) = predef();
-    let mut env = Envs::new(&mut exps, &mut tys, &mut truths);
+    let mut data = predef();
+    let mut env = Envs::new(&mut data);
     
     let a_id = env.ty.add("A".to_owned(), TypeVal::new(vec!()));
     let b_id = env.ty.add("B".to_owned(), TypeVal::new(vec!()));
