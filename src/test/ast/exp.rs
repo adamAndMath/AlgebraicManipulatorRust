@@ -15,11 +15,11 @@ fn succ_zero() {
 
     let zero_ty = ttype!(Nat).to_id(&env.local()).unwrap();
     let zero_id = env.exp.add("Zero".to_owned(), ExpVal::new_empty(zero_ty, 0));
-    env.ty.get_mut(nat_id).unwrap().push_atom(zero_id);
+    env.ty.get_mut(nat_id).push_atom(zero_id);
 
     let succ_ty = ttype!(fn[Nat, Nat]).to_id(&env.local()).unwrap();
     let succ_id = env.exp.add("Succ".to_owned(), ExpVal::new_empty(succ_ty, 0));
-    env.ty.get_mut(nat_id).unwrap().push_comp(succ_id);
+    env.ty.get_mut(nat_id).push_comp(succ_id);
 
     let exp = exp!(Succ(Zero));
 

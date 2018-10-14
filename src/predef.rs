@@ -4,21 +4,21 @@ use envs::*;
 use variance::Variance::*;
 use id::{ Type, Pattern, Exp, ErrID };
 
-pub const TRUE_ID: ID<ExpVal> = ID(0, PhantomData);
-pub const FALSE_ID: ID<ExpVal> = ID(1, PhantomData);
-pub const EXISTS_ID: ID<ExpVal> = ID(2, PhantomData);
-pub const FORALL_ID: ID<ExpVal> = ID(3, PhantomData);
-pub const EQ_ID: ID<ExpVal> = ID(4, PhantomData);
+pub const TRUE_ID: ID<ExpVal> = ID::Predef(0, PhantomData);
+pub const FALSE_ID: ID<ExpVal> = ID::Predef(1, PhantomData);
+pub const EXISTS_ID: ID<ExpVal> = ID::Predef(2, PhantomData);
+pub const FORALL_ID: ID<ExpVal> = ID::Predef(3, PhantomData);
+pub const EQ_ID: ID<ExpVal> = ID::Predef(4, PhantomData);
 
-pub const BOOL_ID: ID<TypeVal> = ID(0, PhantomData);
-pub const FN_ID: ID<TypeVal> = ID(1, PhantomData);
+pub const BOOL_ID: ID<TypeVal> = ID::Predef(0, PhantomData);
+pub const FN_ID: ID<TypeVal> = ID::Predef(1, PhantomData);
 
-pub const ID_ID: ID<TruthVal> = ID(0, PhantomData);
+pub const ID_ID: ID<TruthVal> = ID::Predef(0, PhantomData);
 
 pub fn predef() -> EnvsData {
     let mut bool_ty = TypeVal::new(vec![]);
-    bool_ty.push_atom(ID::new(0));
-    bool_ty.push_atom(ID::new(1));
+    bool_ty.push_atom(TRUE_ID);
+    bool_ty.push_atom(FALSE_ID);
 
     let f_ty = Type::Gen(FN_ID.into(), vec![
         (Contravariant, Type::Gen(FN_ID.into(), vec![
@@ -35,22 +35,22 @@ pub fn predef() -> EnvsData {
         (Covariant, Type::Gen(BOOL_ID.into(), vec![])),
     ]);
 
-    EnvsData {
-        exps: vec![
+    EnvsData::new(
+        vec![
             ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![]), 0),
             ExpVal::new_empty(Type::Gen(BOOL_ID.into(), vec![]), 0),
             ExpVal::new_empty(f_ty.clone(), 1),
             ExpVal::new_empty(f_ty.clone(), 1),
             ExpVal::new_empty(eq_ty, 1),
         ],
-        types: vec![
+        vec![
             bool_ty,
             TypeVal::new(vec![Contravariant, Covariant]),
         ],
-        truths: vec![
+        vec![
             TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Closure(vec![(Pattern::Var(Type::Gen(LocalID::new(0), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(LocalID::new(0), vec![]), Exp::Var(LocalID::new(0), vec![])]))))]))), 1)
         ],
-    }
+    )
 }
 
 pub fn alias_predef(env: &mut Envs) {
@@ -66,7 +66,7 @@ pub fn alias_predef(env: &mut Envs) {
 }
 
 pub fn get_fn_types(ty: Type) -> Result<(Type, Type), ErrID> {
-    if let Type::Gen(LocalID::Global(ID(1,_)), v) = ty {
+    if let Type::Gen(LocalID::Global(ID::Predef(1,_)), v) = ty {
         if let [(Contravariant, ref p), (Covariant, ref b)] = v[..] {
             Ok((p.clone(), b.clone()))
         } else {

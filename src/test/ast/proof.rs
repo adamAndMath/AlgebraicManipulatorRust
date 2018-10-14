@@ -152,5 +152,5 @@ fn double_negate() {
             }
         }
     ).define(&mut env).unwrap();
-    assert_eq!(env.truth.get(env.truth.get_id(&path!(DoubleNegate)).unwrap()).unwrap(), &TruthVal::new(exp!(forall[Bool]((b: Bool) -> eq[Bool](not(not(b)), b))).to_id(&env.local()).unwrap(), 0));
+    assert_eq!(env.truth.get(env.truth.get_id(&path!(DoubleNegate)).unwrap()), &TruthVal::new(exp!(forall[Bool]((b: Bool) -> eq[Bool](not(not(b)), b))).to_id(&env.local()).unwrap(), 0));
 }

@@ -20,9 +20,9 @@ impl ToID for Pattern {
             Pattern::Atom(n, gs) => {
                 let id = env.exp.get_id(n).map_err(ErrAst::UnknownVar)?;
                 let gs = gs.to_id(env)?;
-                let ty = env.exp.get(id)?.ty(&gs);
+                let ty = env.exp.get(id).ty(&gs);
                 let ty_def = match ty {
-                    TypeID::Gen(ty_id, _) => env.ty.get(ty_id)?,
+                    TypeID::Gen(ty_id, _) => env.ty.get(ty_id),
                     ty => return Err(ErrAst::ErrID(ErrID::NotAtomic(id, ty))),
                 };
                 let id = id.global()?;
@@ -32,12 +32,12 @@ impl ToID for Pattern {
             Pattern::Comp(f, gs, p) => {
                 let id = env.exp.get_id(f).map_err(ErrAst::UnknownVar)?;
                 let gs = gs.to_id(env)?;
-                let f = env.exp.get(id)?;
+                let f = env.exp.get(id);
                 let (_, out_id) = get_fn_types(f.ty(&gs))?;
                 let ty_out = match out_id {
                     TypeID::Gen(out_id, _) => env.ty.get(out_id),
                     _ => return Err(ErrAst::ErrID(ErrID::NotAtomic(id, out_id))),
-                }?;
+                };
                 let id = id.global()?;
                 if !ty_out.contains_comp(&id) { return Err(ErrAst::ErrID(ErrID::NotAtomic(id.into(), out_id))) }
                 PatternID::Comp(id, gs, p.to_id(env)?)

@@ -15,7 +15,7 @@ impl ToID for Type {
         Ok(match self {
             Type::Gen(t, gs) => {
                 let id = env.ty.get_id(t).map_err(ErrAst::UnknownType)?;
-                let ty = env.ty.get(id)?;
+                let ty = env.ty.get(id);
                 if ty.gen().len() != gs.len() {
                     return Err(ErrAst::ErrID(ErrID::GenericAmount(gs.len(), ty.gen().len())))
                 }

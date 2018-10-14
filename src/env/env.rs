@@ -1,15 +1,15 @@
 use std::collections::HashMap;
-use super::{ ID, Path, Val };
+use super::{ ID, Path, Val, EnvData };
 
 #[derive(Debug)]
 pub struct Env<'a, T: 'a> {
     vals: HashMap<String, Val<T>>,
     space: HashMap<String, Val<T>>,
-    data: &'a mut Vec<T>,
+    data: &'a mut EnvData<T>,
 }
 
 impl<'a, T: 'a> Env<'a, T> {
-    pub fn new(data: &'a mut Vec<T>) -> Self {
+    pub fn new(data: &'a mut EnvData<T>) -> Self {
         Env {
             vals: HashMap::new(),
             space: HashMap::new(),
@@ -30,10 +30,9 @@ impl<'a, T: 'a> Env<'a, T> {
     }
 
     pub fn add(&mut self, name: String, element: T) -> ID<T> {
-        let id = ID::new(self.data.len());
+        let id = self.data.add(element);
         self.vals.insert(name.clone().into(), Val::ID(id));
         self.space.insert(name.into(), Val::ID(id));
-        self.data.push(element);
         id
     }
 
@@ -62,11 +61,11 @@ impl<'a, T: 'a> Env<'a, T> {
         }
     }
 
-    pub fn get(&self, id: ID<T>) -> Result<&T, ID<T>> {
-        self.data.get(id.0).ok_or(id)
+    pub fn get(&self, id: ID<T>) -> &T {
+        self.data.get(id)
     }
 
-    pub fn get_mut(&mut self, id: ID<T>) -> Result<&mut T, ID<T>> {
-        self.data.get_mut(id.0).ok_or(id)
+    pub fn get_mut(&mut self, id: ID<T>) -> &mut T {
+        self.data.get_mut(id)
     }
 }

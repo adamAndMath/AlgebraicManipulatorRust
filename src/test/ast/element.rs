@@ -19,8 +19,8 @@ fn struct_empty() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_atom(e_id);
 
-        assert_eq!(env.exp.get(e_id), Ok(&ExpVal::new_empty(ty_id, 0)));
-        assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
+        assert_eq!(env.exp.get(e_id), &ExpVal::new_empty(ty_id, 0));
+        assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(&type_val))
     }
 
     assert_eq!(data.lens(), (lens.0+1, lens.1+1, lens.2));
@@ -42,8 +42,8 @@ fn struct_tuple() {
         let mut type_val = TypeVal::new(vec!());
         type_val.push_comp(e_id);
 
-        assert_eq!(env.exp.get(e_id), Ok(&ExpVal::new_empty(ty_id, 0)));
-        assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(Ok(&type_val)))
+        assert_eq!(env.exp.get(e_id), &ExpVal::new_empty(ty_id, 0));
+        assert_eq!(env.ty.get_id(&path!(Test)).map(|id|env.ty.get(id)), Ok(&type_val))
     }
 
     assert_eq!(data.lens(), (lens.0+3, lens.1+3, lens.2));
@@ -63,8 +63,8 @@ fn enum_option() {
         assert_eq!(env.exp.get_id(&path!(Some)), Err(path!(Some)));
         let none_id = env.exp.get_id(&path!(Option::None)).unwrap();
         let some_id = env.exp.get_id(&path!(Option::Some)).unwrap();
-        assert_eq!(env.exp.get(none_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Ok(ttype!(Option[Bool]).to_id(&env.local()).unwrap()));
-        assert_eq!(env.exp.get(some_id).map(|e|e.ty(&[type_id!(BOOL_ID)])), Ok(ttype!(fn[Bool, Option[Bool]]).to_id(&env.local()).unwrap()));
+        assert_eq!(env.exp.get(none_id).ty(&[type_id!(BOOL_ID)]), ttype!(Option[Bool]).to_id(&env.local()).unwrap());
+        assert_eq!(env.exp.get(some_id).ty(&[type_id!(BOOL_ID)]), ttype!(fn[Bool, Option[Bool]]).to_id(&env.local()).unwrap());
     }
 
     assert_eq!(data.lens(), (lens.0+2, lens.1+1, lens.2));
@@ -80,7 +80,7 @@ fn letting() {
         element!(let two = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
         element!(let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))).define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get_id(&path!(two)).map(|id|env.exp.get(id).unwrap()), env.exp.get_id(&path!(two_marked)).map(|id|env.exp.get(id).unwrap()));
+        assert_eq!(env.exp.get_id(&path!(two)).map(|id|env.exp.get(id)), env.exp.get_id(&path!(two_marked)).map(|id|env.exp.get(id)));
     }
 
     assert_eq!(data.lens(), (lens.0+4, lens.1+1, lens.2));
@@ -103,7 +103,7 @@ fn func() {
 
         let env = env.local();
         let add_id = env.exp.get_id(&path!(add)).expect("add has not been named");
-        let add = env.exp.get(add_id).expect("add has not been added to the environment");
+        let add = env.exp.get(add_id);
         let exp = exp!(
             {
                 (a: Nat, Nat::Zero) => a,

@@ -44,13 +44,13 @@ impl Element {
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
                     let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
                     let e_id = env.exp.add(n.clone(), ExpVal::new_empty(ty, gs.len()));
-                    env.ty.get_mut(ty_id).unwrap().push_atom(e_id);
+                    env.ty.get_mut(ty_id).push_atom(e_id);
                 } else {
                     let p = if let [p] = &ps[..] {p.to_id(&env.local())?} else {TypeID::Tuple(ps.to_id(&env.local())?)};
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
                     let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
                     let f_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty))), gs.len()));
-                    env.ty.get_mut(ty_id).unwrap().push_comp(f_id);
+                    env.ty.get_mut(ty_id).push_comp(f_id);
                 }
             },
             Element::Enum(n, gs, vs) => {
@@ -73,7 +73,7 @@ impl Element {
                     space.to_val()
                 };
                 env.exp.add_val(n.clone(), val);
-                let ty = env.ty.get_mut(ty_id).unwrap();
+                let ty = env.ty.get_mut(ty_id);
                 for atom in atoms {
                     ty.push_atom(atom);
                 }
@@ -135,7 +135,7 @@ impl Element {
                     e
                 };
 
-                env.exp.get_mut(id).unwrap().set_val(f);
+                env.exp.get_mut(id).set_val(f);
             },
             Element::Proof(n, gs, p, proof) => {
                 let proof = {
