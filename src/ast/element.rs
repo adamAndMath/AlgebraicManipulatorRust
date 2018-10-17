@@ -147,10 +147,8 @@ impl<'f> Element<'f> {
                     let env = env.scope_ty(gs);
                     
                     if let Some(p) = p {
-                        let ps = p.bound();
                         let p = p.to_id(&env)?;
-                        let ps = ps.into_iter().zip(p.bound()).collect();
-                        let env = env.scope(ps);
+                        let env = env.scope(p.bound());
                         let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
                         let t = p.type_check(&env)?;
                         ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Closure(vec![(p, proof)])))

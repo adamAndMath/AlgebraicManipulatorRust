@@ -48,7 +48,7 @@ pub fn predef() -> EnvsData {
             TypeVal::new(vec![Contravariant, Covariant]),
         ],
         vec![
-            TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Closure(vec![(Pattern::Var(Type::Gen(LocalID::new(0), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(LocalID::new(0), vec![]), Exp::Var(LocalID::new(0), vec![])]))))]))), 1)
+            TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Closure(vec![(Pattern::Var("x".to_owned(), Type::Gen(LocalID::new(0), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![Type::Gen(LocalID::new(0), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(LocalID::new(0), vec![]), Exp::Var(LocalID::new(0), vec![])]))))]))), 1)
         ],
     )
 }

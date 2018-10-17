@@ -32,28 +32,4 @@ impl<'a> LocalEnvs<'a> {
             truth: self.truth.scope(v),
         }
     }
-    
-    pub fn scope_anon<'b>(&'b self, v: Vec<ExpVal>) -> LocalEnvs<'b> where 'a: 'b {
-        LocalEnvs {
-            exp: self.exp.scope_anon(v),
-            ty: self.ty.scope_anon(vec![]),
-            truth: self.truth.scope_anon(vec![]),
-        }
-    }
-    
-    pub fn scope_ty_anon<'b>(&'b self, v: Vec<TypeVal>) -> LocalEnvs<'b> where 'a: 'b {
-        LocalEnvs {
-            exp: self.exp.scope_anon(vec![]),
-            ty: self.ty.scope_anon(v),
-            truth: self.truth.scope_anon(vec![]),
-        }
-    }
-    
-    pub fn scope_truth_anon<'b>(&'b self, v: Vec<TruthVal>) -> LocalEnvs<'b> where 'a: 'b {
-        LocalEnvs {
-            exp: self.exp.scope_anon(vec![]),
-            ty: self.ty.scope_anon(vec![]),
-            truth: self.truth.scope_anon(v),
-        }
-    }
 }

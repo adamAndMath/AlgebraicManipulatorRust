@@ -19,7 +19,7 @@ fn to_id() {
     let env = env.local();
 
     assert_eq!(Pattern::parse("Zero").to_id(&env), Ok(pattern_id!(zero_id)));
-    assert_eq!(Pattern::parse("n: Nat").to_id(&env), Ok(pattern_id!(+nat_id)));
+    assert_eq!(Pattern::parse("n: Nat").to_id(&env), Ok(pattern_id!(n: nat_id)));
     assert_eq!(Pattern::parse("Succ(Zero)").to_id(&env), Ok(pattern_id!(succ_id(zero_id))));
-    assert_eq!(Pattern::parse("Succ(n: Nat)").to_id(&env), Ok(pattern_id!(succ_id(+nat_id))));
+    assert_eq!(Pattern::parse("Succ(n: Nat)").to_id(&env), Ok(pattern_id!(succ_id(n: nat_id))));
 }

@@ -16,7 +16,7 @@ impl<'f> ToID<'f> for Pattern<'f> {
     type To = PatternID;
     fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<PatternID, ErrAst<'f>> {
         Ok(match self {
-            Pattern::Var(_, ty) => PatternID::Var(ty.to_id(env)?),
+            Pattern::Var(n, ty) => PatternID::Var((*n).to_owned(), ty.to_id(env)?),
             Pattern::Atom(n, gs) => {
                 let id = env.exp.get_id(n).map_err(ErrAst::UnknownVar)?;
                 let gs = gs.to_id(env)?;
@@ -51,10 +51,9 @@ impl<'f, T: ToID<'f>> ToID<'f> for (Pattern<'f>, T) {
     type To = (PatternID, T::To);
     fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<(PatternID, T::To), ErrAst<'f>> {
         let (p, e) = self;
-        let ns = p.bound();
         let p = p.to_id(env)?;
-        let ps = ns.into_iter().zip(p.bound()).collect();
-        Ok((p, e.to_id(&env.scope(ps))?))
+        let e = e.to_id(&env.scope(p.bound()))?;
+        Ok((p, e))
     }
 }
 

@@ -17,10 +17,6 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
         LocalEnv::Scope(self, v.iter().enumerate().map(|(id,(n,_))|((*n).to_owned(),id)).collect(), v.into_iter().map(|(_,e)|e).collect())
     }
 
-    pub fn scope_anon<'b>(&'b self, v: Vec<T>) -> LocalEnv<'b, T> where 'a: 'b {
-        LocalEnv::Scope(self, HashMap::new(), v)
-    }
-
     pub fn get_id<'f>(&self, name: &Path<'f>) -> Result<LocalID<T>, Path<'f>> {
         match self {
             LocalEnv::Base(env) => env.get_id(name).map(|id|id.into()),
