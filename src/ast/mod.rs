@@ -1,3 +1,4 @@
+mod word;
 mod ty;
 mod exp;
 mod pattern;
@@ -6,6 +7,7 @@ mod proof;
 mod err;
 mod to_id;
 
+pub use self::word::Word;
 pub use self::ty::Type;
 pub use self::exp::Exp;
 pub use self::pattern::Pattern;

@@ -32,32 +32,32 @@ impl<'a, T: 'a> Env<'a, T> {
         Val::Space(self.space)
     }
 
-    pub fn add(&mut self, name: &str, element: T) -> ID<T> {
+    pub fn add<S: AsRef<str>>(&mut self, name: S, element: T) -> ID<T> {
         let id = self.data.add(element);
-        self.vals.insert(name.to_owned(), Val::ID(id));
-        self.space.insert(name.to_owned(), Val::ID(id));
+        self.vals.insert(name.as_ref().to_owned(), Val::ID(id));
+        self.space.insert(name.as_ref().to_owned(), Val::ID(id));
         id
     }
 
-    pub fn add_val(&mut self, name: &str, val: Val<T>) {
-        self.vals.insert(name.to_owned(), val.clone());
-        self.space.insert(name.to_owned(), val);
+    pub fn add_val<S: AsRef<str>>(&mut self, name: S, val: Val<T>) {
+        self.vals.insert(name.as_ref().to_owned(), val.clone());
+        self.space.insert(name.as_ref().to_owned(), val);
     }
 
-    pub fn alias(&mut self, name: &str, val: Val<T>) {
-        self.vals.insert(name.to_owned(), val);
+    pub fn alias<S: AsRef<str>>(&mut self, name: S, val: Val<T>) {
+        self.vals.insert(name.as_ref().to_owned(), val);
     }
 
-    pub fn get_val<'f>(&self, path: &Path<'f>) -> Result<&Val<T>, Path<'f>> {
+    pub fn get_val<'f, S: Clone + AsRef<str>>(&self, path: &Path<S>) -> Result<&Val<T>, Path<S>> {
         let mut iter = path.iter();
-        let v = iter.next().and_then(|p|self.vals.get(p)).ok_or_else(||path.clone())?;
+        let v = iter.next().and_then(|p|self.vals.get(p.as_ref())).ok_or_else(||path.clone())?;
         iter.try_fold(v, |v, p| match v {
             Val::ID(_) => Err(path.clone()),
-            Val::Space(m) => m.get(p).ok_or_else(||path.clone()),
+            Val::Space(m) => m.get(p.as_ref()).ok_or_else(||path.clone()),
         })
     }
 
-    pub fn get_id<'f>(&self, path: &Path<'f>) -> Result<ID<T>, Path<'f>> {
+    pub fn get_id<'f, S: Clone + AsRef<str>>(&self, path: &Path<S>) -> Result<ID<T>, Path<S>> {
         match self.get_val(path)? {
             Val::ID(id) => Ok(*id),
             Val::Space(_) => Err(path.clone())

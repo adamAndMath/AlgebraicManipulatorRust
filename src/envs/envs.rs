@@ -22,10 +22,10 @@ impl<'a> Envs<'a> {
         }
     }
 
-    pub fn child_scope<E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: &str, f: F) -> Result<(), E> {
+    pub fn child_scope<S: AsRef<str>, E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: &S, f: F) -> Result<(), E> {
         let (exp, ty, truth) = {
             let mut child = Envs {
-                path: format!("{}\\{}", self.path, n),
+                path: format!("{}\\{}", self.path, n.as_ref()),
                 exp: self.exp.child_scope(),
                 ty: self.ty.child_scope(),
                 truth: self.truth.child_scope(),

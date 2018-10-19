@@ -4,14 +4,14 @@ use id::renamed::{ TypeID, ErrID };
 use super::{ ErrAst, ToID };
 
 #[derive(Debug, Clone)]
-pub enum Type<'f> {
-    Gen(Path<'f>, Vec<Type<'f>>),
-    Tuple(Vec<Type<'f>>),
+pub enum Type<T> {
+    Gen(Path<T>, Vec<Type<T>>),
+    Tuple(Vec<Type<T>>),
 }
 
-impl<'f> ToID<'f> for Type<'f> {
+impl<T: Clone + AsRef<str>> ToID<T> for Type<T> {
     type To = TypeID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<TypeID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<TypeID, ErrAst<T>> {
         Ok(match self {
             Type::Gen(t, gs) => {
                 let id = env.ty.get_id(t).map_err(ErrAst::UnknownType)?;

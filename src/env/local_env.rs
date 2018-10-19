@@ -13,16 +13,16 @@ impl<'a, T: 'a> LocalEnv<'a, T> {
         LocalEnv::Base(env)
     }
 
-    pub fn scope<'b>(&'b self, v: Vec<(&str, T)>) -> LocalEnv<'b, T> where 'a: 'b {
-        LocalEnv::Scope(self, v.iter().enumerate().map(|(id,(n,_))|((*n).to_owned(),id)).collect(), v.into_iter().map(|(_,e)|e).collect())
+    pub fn scope<'b, S: AsRef<str>>(&'b self, v: Vec<(S, T)>) -> LocalEnv<'b, T> where 'a: 'b {
+        LocalEnv::Scope(self, v.iter().enumerate().map(|(id,(n,_))|(n.as_ref().to_owned(),id)).collect(), v.into_iter().map(|(_,e)|e).collect())
     }
 
-    pub fn get_id<'f>(&self, name: &Path<'f>) -> Result<LocalID<T>, Path<'f>> {
+    pub fn get_id<'f, S: Clone + AsRef<str>>(&self, name: &Path<S>) -> Result<LocalID<T>, Path<S>> {
         match self {
             LocalEnv::Base(env) => env.get_id(name).map(|id|id.into()),
             LocalEnv::Scope(env, m, v) => {
                 if let [n] = name.as_ref() {
-                    if let Some(id) = m.get(*n).map(|id|LocalID::new(*id)) {
+                    if let Some(id) = m.get(n.as_ref()).map(|id|LocalID::new(*id)) {
                         return Ok(id);
                     }
                 }

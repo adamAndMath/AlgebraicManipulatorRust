@@ -14,7 +14,7 @@ struct AlgParser;
 type Pair<'f> = PestPair<'f, Rule>;
 pub type Error = PestError<Rule>;
 
-pub fn parse_file<'f>(file: &'f str) -> Result<Vec<Element<'f>>, Error> {
+pub fn parse_file<'f>(file: &'f str) -> Result<Vec<Element<Word<'f>>>, Error> {
     let pairs = AlgParser::parse(Rule::file, file);
     pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect())
 }
@@ -46,10 +46,10 @@ fn parse_t2<'f, T: Parse<'f>, U: Parse<'f>>(pair: Pair<'f>) -> (T, U) {
     (t, u)
 }
 
-impl<'f> Parse<'f> for &'f str {
+impl<'f> Parse<'f> for Word<'f> {
     const R: Rule = Rule::name;
     fn parse_pair(pair: Pair<'f>) -> Self {
-        pair.as_str()
+        Word::new(pair.as_span())
     }
 }
 
@@ -107,16 +107,15 @@ impl<'f> Parse<'f> for Tree {
     }
 }
 
-impl<'f> Parse<'f> for Path<'f> {
+impl<'f> Parse<'f> for Path<Word<'f>> {
     const R: Rule = Rule::path;
     fn parse_pair(pair: Pair<'f>) -> Self {
-        let span = pair.as_span();
         if pair.as_rule() != Rule::path { unreachable!("{:?}", pair.as_rule()) }
-        Path::new(span, pair.into_inner().map(Parse::parse_pair).collect())
+        Path::new(pair.into_inner().map(Parse::parse_pair).collect())
     }
 }
 
-impl<'f> Parse<'f> for Type<'f> {
+impl<'f> Parse<'f> for Type<Word<'f>> {
     const R: Rule = Rule::ty;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
@@ -139,7 +138,7 @@ impl<'f> Parse<'f> for Type<'f> {
     }
 }
 
-impl<'f> Parse<'f> for Pattern<'f> {
+impl<'f> Parse<'f> for Pattern<Word<'f>> {
     const R: Rule = Rule::pattern;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
@@ -175,7 +174,7 @@ impl<'f> Parse<'f> for Pattern<'f> {
     }
 }
 
-impl<'f> Parse<'f> for Exp<'f> {
+impl<'f> Parse<'f> for Exp<Word<'f>> {
     const R: Rule = Rule::exp;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
@@ -205,7 +204,7 @@ impl<'f> Parse<'f> for Exp<'f> {
     }
 }
 
-impl<'f> Parse<'f> for TruthRef<'f> {
+impl<'f> Parse<'f> for TruthRef<Word<'f>> {
     const R: Rule = Rule::truth_ref;
     fn parse_pair(pair: Pair<'f>) -> Self {
         let mut inner = pair.into_inner();
@@ -216,7 +215,7 @@ impl<'f> Parse<'f> for TruthRef<'f> {
     }
 }
 
-impl<'f> Parse<'f> for (Direction, TruthRef<'f>, Tree) {
+impl<'f> Parse<'f> for (Direction, TruthRef<Word<'f>>, Tree) {
     const R: Rule = Rule::substitute;
     fn parse_pair(pair: Pair<'f>) -> Self {
         let mut inner = pair.into_inner();
@@ -227,7 +226,7 @@ impl<'f> Parse<'f> for (Direction, TruthRef<'f>, Tree) {
     }
 }
 
-impl<'f> Parse<'f> for Proof<'f> {
+impl<'f> Parse<'f> for Proof<Word<'f>> {
     const R: Rule = Rule::proof;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
@@ -254,7 +253,7 @@ impl<'f> Parse<'f> for Proof<'f> {
     }
 }
 
-impl<'f> Parse<'f> for Element<'f> {
+impl<'f> Parse<'f> for Element<Word<'f>> {
     const R: Rule = Rule::element;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {

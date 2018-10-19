@@ -4,16 +4,16 @@ use id::renamed::{ ExpID };
 use super::{ Type, Pattern, ErrAst, ToID };
 
 #[derive(Debug)]
-pub enum Exp<'f> {
-    Var(Path<'f>, Vec<Type<'f>>),
-    Tuple(Vec<Exp<'f>>),
-    Closure(Vec<(Pattern<'f>, Exp<'f>)>),
-    Call(Box<Exp<'f>>, Box<Exp<'f>>),
+pub enum Exp<T> {
+    Var(Path<T>, Vec<Type<T>>),
+    Tuple(Vec<Exp<T>>),
+    Closure(Vec<(Pattern<T>, Exp<T>)>),
+    Call(Box<Exp<T>>, Box<Exp<T>>),
 }
 
-impl<'f> ToID<'f> for Exp<'f> {
+impl<T: Clone + AsRef<str>> ToID<T> for Exp<T> {
     type To = ExpID;
-    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<ExpID, ErrAst<'f>> {
+    fn to_id<'a>(&self, env: &LocalEnvs<'a>) -> Result<ExpID, ErrAst<T>> {
         Ok(match self {
             Exp::Var(x, gs) => ExpID::Var(env.exp.get_id(x).map_err(ErrAst::UnknownVar)?, gs.to_id(env)?),
             Exp::Tuple(v) => ExpID::Tuple(v.to_id(env)?),
