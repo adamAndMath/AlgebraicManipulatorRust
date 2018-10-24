@@ -8,8 +8,8 @@ use id::renamed::{ TypeID, ExpID, MatchEnv, ErrID, TypeCheck };
 pub enum Element {
     Module(String, Vec<Element>),
     Using(Path),
-    Struct(String, Vec<(Variance, String)>, Vec<Type>),
-    Enum(String, Vec<(Variance, String)>, Vec<(String, Vec<Type>)>),
+    Struct(String, Vec<(Variance, String)>, Option<Type>),
+    Enum(String, Vec<(Variance, String)>, Vec<(String, Option<Type>)>),
     Let(String, Vec<String>, Option<Type>, Exp),
     Func(String, Vec<String>, Option<Type>, Vec<(Pattern, Exp)>),
     Proof(String, Vec<String>, Option<Pattern>, Proof),
@@ -39,18 +39,18 @@ impl Element {
                 }
                 if err { return Err(ErrAst::UndefinedPath(p.clone())); }
             },
-            Element::Struct(n, gs, ps) => {
-                if ps.is_empty() {
-                    let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
-                    let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
-                    let e_id = env.exp.add(n.clone(), ExpVal::new_empty(ty, gs.len()));
-                    env.ty.get_mut(ty_id).push_atom(e_id);
-                } else {
-                    let p = if let [p] = &ps[..] {p.to_id(&env.local())?} else {TypeID::Tuple(ps.to_id(&env.local())?)};
+            Element::Struct(n, gs, p) => {
+                if let Some(p) = p {
+                    let p = p.to_id(&env.local())?;
                     let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
                     let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
                     let f_id = env.exp.add(n.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty))), gs.len()));
                     env.ty.get_mut(ty_id).push_comp(f_id);
+                } else {
+                    let ty_id = env.ty.add(n.clone(), TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
+                    let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
+                    let e_id = env.exp.add(n.clone(), ExpVal::new_empty(ty, gs.len()));
+                    env.ty.get_mut(ty_id).push_atom(e_id);
                 }
             },
             Element::Enum(n, gs, vs) => {
@@ -62,12 +62,11 @@ impl Element {
                 let mut comps = vec![];
                 let val = {
                     let mut space = env.exp.child_scope();
-                    for (v, ps) in vs {
-                        if ps.is_empty() {
-                            atoms.push(space.add(v.clone(), ExpVal::new_empty(ty.clone(), gs.len())));
-                        } else {
-                            let p = if let [p] = &ps[..] {p.clone()} else {TypeID::Tuple(ps.clone())};
+                    for (v, p) in vs {
+                        if let Some(p) = p {
                             comps.push(space.add(v.clone(), ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty.clone()))), gs.len())));
+                        } else {
+                            atoms.push(space.add(v.clone(), ExpVal::new_empty(ty.clone(), gs.len())));
                         }
                     }
                     space.to_val()

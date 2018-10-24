@@ -1,11 +1,11 @@
 macro_rules! element {
-    (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec![], vec![]));
+    (struct $n:ident) => (Element::Struct(stringify!($n).to_owned(), vec![], None));
     (struct $n:ident[$(g:tt)*]) =>
-        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), vec![]));
+        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), None));
     (struct $n:ident($($v:tt)*)) =>
-        (Element::Struct(stringify!($n).to_owned(), vec![], ttype_vec!($($v)*)));
+        (Element::Struct(stringify!($n).to_owned(), vec![], Some(ttype_tuple!($($v)*))));
     (struct $n:ident[$($g:tt)*]($($v:tt)*)) =>
-        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), ttype_vec!($($v)*)));
+        (Element::Struct(stringify!($n).to_owned(), element_gen!(() $($g)*,), Some(ttype_tuple!($($v)*))));
     (enum $n:ident { $($v:tt)* }) =>
         (Element::Enum(stringify!($n).to_owned(), vec![], enum_variants!(() $($v)*,)));
     (enum $n:ident[$($g:tt)*] { $($v:tt)* }) =>
@@ -53,6 +53,6 @@ macro_rules! element_gen {
 
 macro_rules! enum_variants {
     (($($v:tt)*)$(,)* ) => (vec!($($v)*));
-    (($($v:tt)*) $n:ident, $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), vec!()),) $($rest)*));
-    (($($v:tt)*) $n:ident($($t:tt)*), $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), ttype_vec!($($t)*)),) $($rest)*));
+    (($($v:tt)*) $n:ident, $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), None),) $($rest)*));
+    (($($v:tt)*) $n:ident($($t:tt)*), $($rest:tt)*) => (enum_variants!(($($v)* (stringify!($n).to_owned(), Some(ttype_tuple!($($t)*))),) $($rest)*));
 }
