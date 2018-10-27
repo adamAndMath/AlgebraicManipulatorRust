@@ -22,7 +22,7 @@ impl<'a, T, I: Into<LocalID<T>>> Index<I> for LocalEnv<'a, T> {
     fn index(&self, id: I) -> &T {
         match (self, id.into()) {
             (LocalEnv::Base(env), LocalID::Global(id)) => &env[id],
-            (LocalEnv::Base(_), LocalID::Local(id, p)) => unreachable!(),
+            (LocalEnv::Base(_), LocalID::Local(_, _)) => unreachable!(),
             (LocalEnv::Scope(env, _), LocalID::Global(id)) => &env[LocalID::Global(id)],
             (LocalEnv::Scope(env, v), LocalID::Local(id, p)) =>
                 if v.len() > id {
