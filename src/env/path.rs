@@ -10,8 +10,22 @@ impl Path {
         self.0.iter()
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn name(&self) -> String {
         self.0[self.0.len() - 1].clone()
+    }
+
+    pub fn prepend(mut self, space: String) -> Self {
+        self.0.insert(0, space);
+        self
+    }
+
+    pub fn append(mut self, space: String) -> Self {
+        self.0.push(space);
+        self
     }
 }
 

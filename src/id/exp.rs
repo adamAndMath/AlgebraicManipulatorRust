@@ -15,7 +15,7 @@ pub enum Exp {
 impl TypeCheck for Exp {
     fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
-            Exp::Var(x, gs) => env.exp.get(*x).ty(gs),
+            Exp::Var(x, gs) => env.exp[*x].ty(gs),
             Exp::Tuple(v) => Type::Tuple(v.type_check(env)?),
             Exp::Closure(v) => {
                 let mut re: Option<Type> = None;

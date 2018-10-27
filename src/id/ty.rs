@@ -7,7 +7,7 @@ use super::{ ErrID, SetLocal };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    Gen(LocalID<TypeVal>, Vec<(Variance, Type)>),
+    Gen(LocalID<TypeVal>, Vec<Type>),
     Tuple(Vec<Type>),
 }
 
@@ -23,12 +23,6 @@ impl PushLocal<TypeVal> for Type {
             Type::Gen(id, v) => Type::Gen(id.push_local_with_min(p, min, amount), v.push_local_with_min(p, min, amount)),
             Type::Tuple(v) => Type::Tuple(v.push_local_with_min(p, min, amount)),
         }
-    }
-}
-
-impl SetLocal<Type> for (Variance, Type) {
-    fn set_with_min(&self, min: usize, par: &[Type]) -> Self {
-        (self.0, self.1.set_with_min(min, par))
     }
 }
 

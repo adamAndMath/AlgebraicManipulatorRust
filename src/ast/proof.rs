@@ -1,5 +1,5 @@
 use env::Path;
-use envs::LocalEnvs;
+use envs::LocalNamespaces;
 use super::{ Type, Pattern, Exp, ErrAst, ToID };
 use id::renamed::{ TruthRefID, ProofID, Direction, RefType };
 use tree::Tree;
@@ -13,13 +13,13 @@ pub struct TruthRef {
 
 impl ToID for TruthRef {
     type To = TruthRefID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<TruthRefID, ErrAst> {
+    fn to_id(&self, env: &LocalNamespaces) -> Result<TruthRefID, ErrAst> {
         let id = match self.name.as_ref() {
             [n] if n == "def" => RefType::Def,
             [n] if n == "match" => RefType::Match,
-            _ => RefType::Ref(env.truth.get_id(&self.name).map_err(ErrAst::UnknownTruth)?),
+            _ => RefType::Ref(env.get_truth(&self.name)?),
         };
-        let gen: Vec<_> = self.gen.to_id(env)?;
+        let gen = self.gen.to_id(env)?;
         let par = self.par.to_id(env)?;
         Ok(TruthRefID::new(id, gen, par))
     }
@@ -40,7 +40,7 @@ pub enum Proof {
 
 impl ToID for Proof {
     type To = ProofID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<ProofID, ErrAst> {
+    fn to_id(&self, env: &LocalNamespaces) -> Result<ProofID, ErrAst> {
         Ok(match self {
             Proof::Sequence(initial, rest) => ProofID::Sequence(initial.to_id(env)?, rest.into_iter().map(|(d,p,t)|Ok((*d, p.to_id(env)?, t.clone()))).collect::<Result<_,ErrAst>>()?),
             Proof::Block(vars, end) => unimplemented!(),

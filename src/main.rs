@@ -16,18 +16,15 @@ mod test;
 
 fn main() {
     use predef::*;
-    use env::Path;
-    use envs::Envs;
     use variance::Variance;
     use tree::Tree;
     use ast::*;
     use id::Direction;
 
-    let mut data = predef();
-    let mut env = Envs::new(&mut data);
-    alias_predef(&mut env);
+    let mut space = predef_space();
+    let mut env = predef();
 
-    script! {env,
+    script! {space, env,
         fn not {
             true => false,
             false => true

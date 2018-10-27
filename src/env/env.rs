@@ -1,71 +1,52 @@
-use std::collections::HashMap;
-use super::{ ID, Path, Val, EnvData };
+use std::ops::{ Index, IndexMut };
+use super::ID;
 
 #[derive(Debug)]
-pub struct Env<'a, T: 'a> {
-    vals: HashMap<String, Val<T>>,
-    space: HashMap<String, Val<T>>,
-    data: &'a mut EnvData<T>,
+pub struct Env<T> {
+    predef: Vec<T>,
+    normal: Vec<T>,
 }
 
-impl<'a, T: 'a> Env<'a, T> {
-    pub fn new(data: &'a mut EnvData<T>) -> Self {
-        Env {
-            vals: HashMap::new(),
-            space: HashMap::new(),
-            data
-        }
+impl<T> Env<T> {
+    pub fn new(predef: Vec<T>) -> Self {
+        Env { predef, normal: vec![] }
     }
 
-    pub fn child_scope<'b>(&'b mut self) -> Env<'b, T> where 'a: 'b {
-        Env {
-            vals: HashMap::new(),
-            space: HashMap::new(),
-            data: &mut self.data,
-        }
-    }
-
-    pub fn to_val(self) -> Val<T> {
-        Val::Space(self.space)
-    }
-
-    pub fn add(&mut self, name: String, element: T) -> ID<T> {
-        let id = self.data.add(element);
-        self.vals.insert(name.clone().into(), Val::ID(id));
-        self.space.insert(name.into(), Val::ID(id));
+    pub fn add(&mut self, e: T) -> ID<T> {
+        let id = ID::new(self.normal.len());
+        self.normal.push(e);
         id
     }
 
-    pub fn add_val(&mut self, name: String, val: Val<T>) {
-        self.vals.insert(name.clone().into(), val.clone());
-        self.space.insert(name.into(), val);
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
+        self.normal.len()
     }
+}
 
-    pub fn alias(&mut self, name: String, val: Val<T>) {
-        self.vals.insert(name.into(), val);
-    }
-
-    pub fn get_val(&self, path: &Path) -> Result<&Val<T>, Path> {
-        let mut iter = path.iter();
-        let v = iter.next().and_then(|p|self.vals.get(p)).ok_or_else(||path.clone())?;
-        iter.try_fold(v, |v, p| match v {
-            Val::ID(_) => Err(path.clone()),
-            Val::Space(m) => m.get(p).ok_or_else(||path.clone()),
-        })
-    }
-
-    pub fn get_id(&self, path: &Path) -> Result<ID<T>, Path> {
-        match self.get_val(path)? {
-            Val::ID(id) => Ok(*id),
-            Val::Space(_) => Err(path.clone())
+impl<T> Index<ID<T>> for Env<T> {
+    type Output = T;
+    fn index(&self, id: ID<T>) -> &T {
+        match id {
+            ID::Predef(id, _) => &self.predef[id],
+            ID::Normal(id, _) => &self.normal[id],
         }
     }
+}
 
-    pub fn get(&self, id: ID<T>) -> &T {
-        self.data.get(id)
+impl<T> IndexMut<ID<T>> for Env<T> {
+    fn index_mut(&mut self, id: ID<T>) -> &mut T {
+        match id {
+            ID::Predef(id, _) => &mut self.predef[id],
+            ID::Normal(id, _) => &mut self.normal[id],
+        }
     }
+}
 
-    pub fn get_mut(&mut self, id: ID<T>) -> &mut T {
-        self.data.get_mut(id)
+#[cfg(test)]
+impl<T, I> Index<I> for Env<T> where Vec<T>: Index<I> {
+    type Output = <Vec<T> as Index<I>>::Output;
+    fn index(&self, i: I) -> &Self::Output {
+        &self.normal[i]
     }
 }

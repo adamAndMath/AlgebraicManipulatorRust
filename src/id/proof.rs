@@ -54,15 +54,15 @@ impl TruthRef {
 
     pub fn get(&self, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         match self.id {
-            RefType::Ref(id) => env.truth.get(id).get(self.gen.clone(), self.par.clone(), env),
+            RefType::Ref(id) => env.truth[id].get(self.gen.clone(), self.par.clone(), env),
             RefType::Def => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = match par {
-                    Exp::Var(id, gs) => env.exp.get(*id).val(*id, gs)?,
+                    Exp::Var(id, gs) => env.exp[*id].val(*id, gs)?,
                     Exp::Call(box f, box arg) =>
                         match f {
                             Exp::Var(id, gs) =>
-                                match env.exp.get(*id).val(*id, gs)? {
+                                match env.exp[*id].val(*id, gs)? {
                                     Exp::Closure(v) => v,
                                     _ => unimplemented!(),
                                 },

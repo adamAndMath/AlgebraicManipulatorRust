@@ -16,8 +16,20 @@ impl TypeCheck for Pattern {
     fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         Ok(match self {
             Pattern::Var(ty) => ty.clone(),
-            Pattern::Atom(id, gs) => env.exp.get(*id).ty(gs),
-            Pattern::Comp(id, gs, p) => env.exp.get(*id).ty(gs).call_output(&p.type_check(env)?)?,
+            Pattern::Atom(id, gs) => {
+                let ty = env.exp[*id].ty(gs);
+                match ty {
+                    Type::Gen(ty_id, _) if env.ty[ty_id].contains_atom(id) => ty,
+                    ty => return Err(ErrID::NotAtomic((*id).into(), ty)),
+                }
+            },
+            Pattern::Comp(id, gs, p) => {
+                let ty = env.exp[*id].ty(gs).call_output(&p.type_check(env)?)?;
+                match ty {
+                    Type::Gen(ty_id, _) if env.ty[ty_id].contains_comp(id) => ty,
+                    ty => return Err(ErrID::NotAtomic((*id).into(), ty)),
+                }
+            },
             Pattern::Tuple(v) => Type::Tuple(v.type_check(env)?),
         })
     }
@@ -26,7 +38,7 @@ impl TypeCheck for Pattern {
 impl<T: TypeCheck> TypeCheck for (Pattern, T) {
     fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
         let (p, e) = self;
-        let b = e.type_check(&env.scope_anon(p.bound()))?;
+        let b = e.type_check(&env.scope_exp(p.bound()))?;
         Ok(func(p.type_check(env)?, b))
     }
 }

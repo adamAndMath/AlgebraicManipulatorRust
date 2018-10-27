@@ -1,6 +1,6 @@
 use env::Path;
-use envs::LocalEnvs;
-use id::renamed::{ TypeID, ErrID };
+use envs::LocalNamespaces;
+use id::renamed::TypeID;
 use super::{ ErrAst, ToID };
 
 #[derive(Debug, Clone)]
@@ -11,16 +11,9 @@ pub enum Type {
 
 impl ToID for Type {
     type To = TypeID;
-    fn to_id(&self, env: &LocalEnvs) -> Result<TypeID, ErrAst> {
+    fn to_id(&self, env: &LocalNamespaces) -> Result<TypeID, ErrAst> {
         Ok(match self {
-            Type::Gen(t, gs) => {
-                let id = env.ty.get_id(t).map_err(ErrAst::UnknownType)?;
-                let ty = env.ty.get(id);
-                if ty.gen().len() != gs.len() {
-                    return Err(ErrAst::ErrID(ErrID::GenericAmount(gs.len(), ty.gen().len())))
-                }
-                TypeID::Gen(id, ty.gen().into_iter().cloned().zip(gs.to_id(env)?).collect())
-            },
+            Type::Gen(t, gs) => TypeID::Gen(env.get_type(t)?, gs.to_id(env)?),
             Type::Tuple(v) => TypeID::Tuple(v.to_id(env)?),
         })
     }
