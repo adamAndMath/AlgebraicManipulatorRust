@@ -1,3 +1,4 @@
+use std::fmt::{ self, Display, Formatter };
 use pest::Span;
 
 #[derive(Debug, Clone, Eq)]
@@ -12,6 +13,12 @@ impl<'f> Word<'f> {
 
     pub fn as_span(&self) -> Span<'f> {
         self.span.clone()
+    }
+}
+
+impl<'f> Display for Word<'f> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.as_ref().fmt(f)
     }
 }
 

@@ -20,15 +20,33 @@ mod macros;
 mod test;
 
 fn main() {
+    match run() {
+        Ok(()) => (),
+        Err(e) => panic!("{}", e),
+    }
+}
+
+use parser::{ parse_file, Error };
+use std::fs::read_to_string;
+use envs::NameData;
+use ast::ErrAst;
+
+fn run() -> Result<(), Error> {
     use predef::*;
-    use envs::Envs;
     
     let mut args = std::env::args();
     args.next();
     let path = args.next().expect("expected file path");
 
-    let mut data = predef();
-    let mut env = Envs::new(path, &mut data);
-    alias_predef(&mut env);
-    env.read_file();
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let file = read_file(&path);
+    parse_file(&file)?.into_iter().flat_map(|e|e.to_id(&path, &mut space)).collect::<Result<Vec<_>,_>>()?.into_iter().map(|e|e.define(&mut env)).collect::<Result<(),_>>().map_err(|e|ErrAst::from(e).into())
+}
+
+fn read_file(path: &str) -> String {
+    read_to_string(format!("{}.alg", path))
+        .or_else(|_|read_to_string(format!("{}\\mod.alg", path)))
+        .expect(&format!("{}", path))
 }

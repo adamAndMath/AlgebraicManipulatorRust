@@ -1,46 +1,23 @@
-use predef::*;
 use env::{ Env, LocalEnv };
-use super::{ EnvsData, LocalEnvs, ExpVal, TypeVal, TruthVal };
-use std::fs::read_to_string;
-use parser::{ parse_file, Error };
+use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]
-pub struct Envs<'a> {
-    pub path: String,
-    pub exp: Env<'a, ExpVal>,
-    pub ty: Env<'a, TypeVal>,
-    pub truth: Env<'a, TruthVal>,
+pub struct Envs {
+    pub ty: Env<TypeVal>,
+    pub exp: Env<ExpVal>,
+    pub truth: Env<TruthVal>,
 }
 
-impl<'a> Envs<'a> {
-    pub fn new(path: String, data: &'a mut EnvsData) -> Self {
+impl Envs {
+    pub fn new(types: Vec<TypeVal>, exps: Vec<ExpVal>, truths: Vec<TruthVal>) -> Self {
         Envs {
-            path,
-            exp: Env::new(&mut data.exps),
-            ty: Env::new(&mut data.types),
-            truth: Env::new(&mut data.truths),
+            exp: Env::new(exps),
+            ty: Env::new(types),
+            truth: Env::new(truths),
         }
     }
 
-    pub fn child_scope<S: AsRef<str>, E, F: Fn(&mut Envs) -> Result<(), E>>(&mut self, n: &S, f: F) -> Result<(), E> {
-        let (exp, ty, truth) = {
-            let mut child = Envs {
-                path: format!("{}\\{}", self.path, n.as_ref()),
-                exp: self.exp.child_scope(),
-                ty: self.ty.child_scope(),
-                truth: self.truth.child_scope(),
-            };
-            alias_predef(&mut child);
-            f(&mut child)?;
-            (child.exp.to_val(), child.ty.to_val(), child.truth.to_val())
-        };
-        self.exp.add_val(n, exp);
-        self.ty.add_val(n, ty);
-        self.truth.add_val(n, truth);
-        Ok(())
-    }
-
-    pub fn local<'b>(&'b self) -> LocalEnvs<'b> where 'a: 'b {
+    pub fn local<'b>(&'b self) -> LocalEnvs<'b> {
         LocalEnvs {
             exp: LocalEnv::new(&self.exp),
             ty: LocalEnv::new(&self.ty),
@@ -48,23 +25,8 @@ impl<'a> Envs<'a> {
         }
     }
 
-    pub fn read_file(&mut self) {
-        if let Err(e) = self.try_read_file() {
-            panic!("{}", e.with_path(&self.path));
-        }
-    }
-
-    fn try_read_file(&mut self) -> Result<(), Error> {
-        let file = read_to_string(format!("{}.alg", self.path.clone()))
-            .or_else(|_|read_to_string(format!("{}\\mod.alg", self.path)))
-            .expect(&format!("{}", self.path));
-
-        let file = &file;
-        let elements = parse_file(file)?;
-
-        for element in elements {
-            element.define(self).map_err(|e|e.into())?;
-        }
-        Ok(())
+    #[cfg(test)]
+    pub fn lens(&self) -> (usize, usize, usize) {
+        (self.ty.len(), self.exp.len(), self.truth.len())
     }
 }

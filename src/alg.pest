@@ -54,9 +54,6 @@ proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ 
 proof_arm = { pattern ~ "=>" ~ proof }
 
 element = _{ "mod" ~ elm_mod | "use" ~ elm_use | "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
-elm_mod = { name ~ elm_mod_scope? }
-elm_mod_scope = { "{" ~ element* ~ "}" }
-elm_use = { path }
 elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
 elm_struct_par = { ty_tuple? }
 elm_enum = { name ~ type_gen ~ clauses ~ "{" ~ elm_emum_variant ~ ("," ~ elm_emum_variant)* ~ ","? ~ "}" }
@@ -65,3 +62,8 @@ elm_let = { name ~ type_par ~ of_type ~ clauses ~ "=" ~ exp }
 elm_func = { name ~ type_par ~ pattern_tuple ~ return_type ~ clauses ~ "=" ~ exp }
 elm_func_match = { name ~ type_par ~ return_type ~ clauses ~ exp_match }
 elm_proof = { name ~ type_par ~ pattern_tuple ~ clauses ~ "=" ~ proof }
+
+module = _{ "mod" ~ elm_mod | "use" ~ elm_use | element }
+elm_mod = { name ~ elm_mod_scope? }
+elm_mod_scope = { "{" ~ element* ~ "}" }
+elm_use = { path }

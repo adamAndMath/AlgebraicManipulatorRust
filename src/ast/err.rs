@@ -44,7 +44,7 @@ impl<'f> Into<Error> for ErrAst<Word<'f>> {
             ErrAst::UnknownVar(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown variable".to_owned() }, p.name().as_span()),
             ErrAst::UnknownType(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown type".to_owned() }, p.name().as_span()),
             ErrAst::UnknownTruth(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Unknown truth".to_owned() }, p.name().as_span()),
-            ErrAst::UndefinedPath(p) => Error::new_from_span(ErrorVariant::CustomError { message: "Path doesn't exist".to_owned() }, p.name().as_span()),
+            ErrAst::UndefinedPath(p) => Error::new_from_span(ErrorVariant::CustomError { message: format!("The path \"{}\" doesn't exist", p) }, p.name().as_span()),
             e => panic!("{:?}", e),
         }
     }

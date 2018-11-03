@@ -2,127 +2,136 @@ use parser::Parse;
 use predef::*;
 use env::Path;
 use envs::*;
-use ast::{ Type, Exp, Element, ToID };
+use ast::{ Type, Exp, Element, ToID, ErrAst };
 use id::renamed::TypeID;
 
 
 #[test]
 fn struct_empty() {
-    let mut data = predef();
-    let lens = data.lens();
-    {
-        let mut env = Envs::new("".to_owned(), &mut data);
-        Element::parse("struct Test").define(&mut env).unwrap();
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let lens = env.lens();
 
-        let e_id = env.exp.get_id(&Path::parse("Test")).unwrap();
-        let ty_id = Type::parse("Test").to_id(&env.local()).unwrap();
-        let mut type_val = TypeVal::new(vec!());
-        type_val.push_atom(e_id);
+    Element::parse(
+        "struct Test;"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get(e_id), &ExpVal::new_empty(ty_id, 0));
-        assert_eq!(env.ty.get_id(&Path::parse("Test")).map(|id|env.ty.get(id)), Ok(&type_val));
-    }
+    let e_id = space.get_exp(&Path::parse("Test")).unwrap();
+    let ty_id = Type::parse("Test").to_id(&space.local()).unwrap();
+    let mut type_val = TypeVal::new(vec!());
+    type_val.push_atom(e_id);
 
-    assert_eq!(data.lens(), (lens.0+1, lens.1+1, lens.2));
+    assert_eq!(env.exp[e_id], ExpVal::new_empty(ty_id, 0));
+    assert_eq!(space.get_type(&Path::parse("Test")).map(|id|&env.ty[id]), Ok(&type_val));
+
+    assert_eq!(env.lens(), (lens.0+1, lens.1+1, lens.2));
 }
 
 #[test]
 fn struct_tuple() {
-    let mut data = predef();
-    let lens = data.lens();
-    {
-        let mut env = Envs::new("".to_owned(), &mut data);
-        env.ty.alias("fn", FN_ID.into());
-        Element::parse("struct A").define(&mut env).unwrap();
-        Element::parse("struct B").define(&mut env).unwrap();
-        Element::parse("struct Test(A, B)").define(&mut env).unwrap();
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let lens = env.lens();
 
-        let e_id = env.exp.get_id(&Path::parse("Test")).unwrap();
-        let ty_id = Type::parse("fn<(A, B), Test>").to_id(&env.local()).unwrap();
-        let mut type_val = TypeVal::new(vec!());
-        type_val.push_comp(e_id);
+    Element::parse("struct A;").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("struct B;").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("struct Test(A, B);").to_id(&mut space).unwrap().define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get(e_id), &ExpVal::new_empty(ty_id, 0));
-        assert_eq!(env.ty.get_id(&Path::parse("Test")).map(|id|env.ty.get(id)), Ok(&type_val));
-    }
+    let e_id = space.get_exp(&Path::parse("Test")).unwrap();
+    let ty_id = ::predef::func(Type::parse("(A, B)").to_id(&space.local()).unwrap(), Type::parse("Test").to_id(&space.local()).unwrap());
+    let mut type_val = TypeVal::new(vec!());
+    type_val.push_comp(e_id);
 
-    assert_eq!(data.lens(), (lens.0+3, lens.1+3, lens.2));
+    assert_eq!(env.exp[e_id], ExpVal::new_empty(ty_id, 0));
+    assert_eq!(space.get_type(&Path::parse("Test")).map(|id|&env.ty[id]), Ok(&type_val));
+
+    assert_eq!(env.lens(), (lens.0+3, lens.1+3, lens.2));
 }
 
 #[test]
 fn enum_option() {
-    let mut data = predef();
-    let lens = data.lens();
-    {
-        let mut env = Envs::new("".to_owned(), &mut data);
-        alias_predef(&mut env);
-        env.ty.alias("fn", FN_ID.into());
-        Element::parse("enum Option<T> { Some(T), None }").define(&mut env).unwrap();
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let lens = env.lens();
+    
+    Element::parse(
+        "enum Option<T> { Some(T), None }"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
 
-        assert_eq!(env.exp.get_id(&Path::parse("None")), Err(Path::parse("None")));
-        assert_eq!(env.exp.get_id(&Path::parse("Some")), Err(Path::parse("Some")));
-        let none_id = env.exp.get_id(&Path::parse("Option::None")).unwrap();
-        let some_id = env.exp.get_id(&Path::parse("Option::Some")).unwrap();
-        assert_eq!(env.exp.get(none_id).ty(&[type_id!(BOOL_ID)]), Type::parse("Option<Bool>").to_id(&env.local()).unwrap());
-        assert_eq!(env.exp.get(some_id).ty(&[type_id!(BOOL_ID)]), Type::parse("fn<Bool, Option<Bool>>").to_id(&env.local()).unwrap());
-    }
+    assert_eq!(space.get_exp(&Path::parse("None")), Err(ErrAst::UnknownVar(Path::parse("None"))));
+    assert_eq!(space.get_exp(&Path::parse("Some")), Err(ErrAst::UnknownVar(Path::parse("Some"))));
+    let option_id = space.get_type(&Path::parse("Option")).unwrap();
+    let none_id = space.get_exp(&Path::parse("Option::None")).unwrap();
+    let some_id = space.get_exp(&Path::parse("Option::Some")).unwrap();
+    assert_eq!(env.exp[none_id].ty(&[type_id!(BOOL_ID)]), type_id!(option_id[BOOL_ID]));
+    assert_eq!(env.exp[some_id].ty(&[type_id!(BOOL_ID)]), type_id!(FN_ID[BOOL_ID, option_id[BOOL_ID]]));
 
-    assert_eq!(data.lens(), (lens.0+2, lens.1+1, lens.2));
+    assert_eq!(env.lens(), (lens.0+1, lens.1+2, lens.2));
 }
 
 #[test]
 fn letting() {
-    let mut data = predef();
-    let lens = data.lens();
-    {
-        let mut env = Envs::new("".to_owned(), &mut data);
-        Element::parse("enum Nat { Zero, Succ(Nat) }").define(&mut env).unwrap();
-        Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
-        Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero))").define(&mut env).unwrap();
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let lens = env.lens();
 
-        assert_eq!(env.exp.get_id(&Path::parse("two")).map(|id|env.exp.get(id)), env.exp.get_id(&Path::parse("two_marked")).map(|id|env.exp.get(id)));
-    }
+    Element::parse("enum Nat { Zero, Succ(Nat) }").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero));").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero));").to_id(&mut space).unwrap().define(&mut env).unwrap();
 
-    assert_eq!(data.lens(), (lens.0+4, lens.1+1, lens.2));
+    assert_eq!(space.get_exp(&Path::parse("two")).map(|id|&env.exp[id]), space.get_exp(&Path::parse("two_marked")).map(|id|&env.exp[id]));
+
+    assert_eq!(env.lens(), (lens.0+1, lens.1+4, lens.2));
 }
 
 #[test]
 fn func() {
-    let mut data = predef();
-    let lens = data.lens();
-    {
-        let mut env = Envs::new("".to_owned(), &mut data);
-        env.ty.alias("fn", FN_ID.into());
-        Element::parse("enum Nat { Zero, Succ(Nat) }").define(&mut env).expect("Failed to define Nat");
-        Element::parse(
-            "fn add -> Nat {
-                (a: Nat, Nat::Zero) => a,
-                (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
-            }"
-        ).define(&mut env).expect("Failed to define add");
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
+    let lens = env.lens();
 
-        let env = env.local();
-        let add_id = env.exp.get_id(&Path::parse("add")).expect("add has not been named");
-        let add = env.exp.get(add_id);
-        let exp = Exp::parse(
-            "{
-                (a: Nat, Nat::Zero) => a,
-                (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
-            }"
-        ).to_id(&env).expect("Failed to build lambda");
+    Element::parse(
+        "enum Nat { Zero, Succ(Nat) }"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse(
+        "fn add -> Nat {
+            (a: Nat, Nat::Zero) => a,
+            (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
+        }"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
 
-        assert_eq!(add.val(add_id, &[]).expect("No expresion in add"), exp);
-        assert_eq!(add.ty(&[]), Type::parse("fn<(Nat, Nat), Nat>").to_id(&env).expect("Failed to find type (Nat, Nat) -> Nat"));
-    }
+    let nat_id = space.get_type(&Path::parse("Nat")).expect("Nat has not been named");
+    let add_id = space.get_exp(&Path::parse("add")).expect("add has not been named");
+    let add = &env.exp[add_id];
+    let space = space.local();
+    let exp = Exp::parse(
+        "{
+            (a: Nat, Nat::Zero) => a,
+            (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
+        }"
+    ).to_id(&space).expect("Failed to build lambda");
+
+    assert_eq!(add.val(add_id.into(), &[]).expect("No expresion in add"), exp);
+    assert_eq!(add.ty(&[]), type_id!(FN_ID[(nat_id, nat_id), nat_id]));
     
-    assert_eq!(data.lens(), (lens.0+3, lens.1+1, lens.2));
+    assert_eq!(env.lens(), (lens.0+1, lens.1+3, lens.2));
 }
 
 #[test]
 fn lists() {
-    let mut data = predef();
-    let mut env = Envs::new("".to_owned(), &mut data);
+    let mut names = NameData::new();
+    let mut space = predef_space(&mut names);
+    let mut env = predef();
     
-    Element::parse("enum List<+T> { Nil, Cons(T, List<T>)}").define(&mut env).unwrap();
-    Element::parse("fn prepend<T>(e: T, l: List<T>) -> List<T> = List::Cons<T>(e, l)").define(&mut env).unwrap();
+    Element::parse(
+        "enum List<+T> { Nil, Cons(T, List<T>)}"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse(
+        "fn prepend<T>(e: T, l: List<T>) -> List<T> = List::Cons<T>(e, l);"
+    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
 }

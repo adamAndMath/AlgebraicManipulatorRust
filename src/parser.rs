@@ -14,9 +14,9 @@ struct AlgParser;
 type Pair<'f> = PestPair<'f, Rule>;
 pub type Error = PestError<Rule>;
 
-pub fn parse_file<'f>(file: &'f str) -> Result<Vec<Element<Word<'f>>>, Error> {
+pub fn parse_file<'f>(file: &'f str) -> Result<Vec<Module<Word<'f>>>, Error> {
     let pairs = AlgParser::parse(Rule::file, file);
-    pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Element::parse_pair).collect())
+    pairs.map(|mut p|p.next().unwrap().into_inner().filter(|p|p.as_rule() != Rule::EOI).map(Module::parse_pair).collect())
 }
 
 pub trait Parse<'f>: Sized {
@@ -257,13 +257,6 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
     const R: Rule = Rule::element;
     fn parse_pair(pair: Pair<'f>) -> Self {
         match pair.as_rule() {
-            Rule::elm_mod => {
-                let mut inner = pair.into_inner();
-                let name = parse(&mut inner);
-                let elements = inner.next().map(|p|p.into_inner().map(Element::parse_pair).collect());
-                Element::Module(name, elements)
-            },
-            Rule::elm_use => Element::Using(parse(&mut pair.into_inner())),
             Rule::elm_struct => {
                 let mut inner = pair.into_inner();
                 let name = parse(&mut inner);
@@ -322,6 +315,22 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
                 Element::Proof(name, gen, pattern, proof)
             },
             r => unreachable!("{:?}", r),
+        }
+    }
+}
+
+impl<'f> Parse<'f> for Module<Word<'f>> {
+    const R: Rule = Rule::module;
+    fn parse_pair(pair: Pair<'f>) -> Self {
+        match pair.as_rule() {
+            Rule::elm_mod => {
+                let mut inner = pair.into_inner();
+                let name = parse(&mut inner);
+                let elements = inner.next().map(|p|p.into_inner().map(Module::parse_pair).collect());
+                Module::Module(name, elements)
+            },
+            Rule::elm_use => Module::Using(parse(&mut pair.into_inner())),
+            _ => Module::Element(Element::parse_pair(pair)),
         }
     }
 }

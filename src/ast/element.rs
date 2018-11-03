@@ -1,13 +1,10 @@
-use predef::*;
 use envs::*;
-use env::{ LocalID, Path };
 use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
-use variance::Variance::{ self, * };
-use id::renamed::{ TypeID, ExpID, MatchEnv, ErrID, TypeCheck };
+use variance::Variance;
+use id::renamed::{ ElementID };
 
+#[derive(Debug)]
 pub enum Element<T> {
-    Module(T, Option<Vec<Element<T>>>),
-    Using(Path<T>),
     Struct(T, Vec<(Variance, T)>, Option<Type<T>>),
     Enum(T, Vec<(Variance, T)>, Vec<(T, Option<Type<T>>)>),
     Let(T, Vec<T>, Option<Type<T>>, Exp<T>),
@@ -16,151 +13,61 @@ pub enum Element<T> {
 }
 
 impl<T: Clone + AsRef<str>> Element<T> {
-    pub fn define<'a>(&self, env: &mut Envs<'a>) -> Result<(), ErrAst<T>> {
-        match self {
-            Element::Module(n, es) =>
-                env.child_scope::<_,ErrAst<T>,_>(n, |env| {
-                    if let Some(es) = es {
-                        for e in es { e.define(env)? }
-                    } else {
-                        env.read_file()
-                    }
-                    Ok(())
-                })?,
-            Element::Using(p) => {
-                let mut err = true;
-                if let Ok(exp) = env.exp.get_val(p).map(|v|v.clone()) {
-                    env.exp.alias(p.name(), exp);
-                    err = false;
-                }
-                if let Ok(ty) = env.ty.get_val(p).map(|v|v.clone()) {
-                    env.ty.alias(p.name(), ty);
-                    err = false;
-                }
-                if let Ok(truth) = env.truth.get_val(p).map(|v|v.clone()) {
-                    env.truth.alias(p.name(), truth);
-                    err = false;
-                }
-                if err { return Err(ErrAst::UndefinedPath(p.clone())); }
-            },
+    pub fn to_id(&self, env: &mut Namespaces) -> Result<ElementID, ErrAst<T>> {
+        Ok(match self {
             Element::Struct(n, gs, p) => {
-                if let Some(p) = p {
-                    let p = p.to_id(&env.local().scope_ty(gs.into_iter().map(|(_,g)|(g, TypeVal::new(vec![]))).collect::<Vec<_>>()))?;
-                    let ty_id = env.ty.add(n, TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
-                    let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
-                    let f_id = env.exp.add(n, ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty))), gs.len()));
-                    env.ty.get_mut(ty_id).push_comp(f_id);
-                } else {
-                    let ty_id = env.ty.add(n, TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
-                    let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
-                    let e_id = env.exp.add(n, ExpVal::new_empty(ty, gs.len()));
-                    env.ty.get_mut(ty_id).push_atom(e_id);
-                }
+                let var = gs.into_iter().map(|(v,_)|*v).collect();
+                let p = p.to_id(&env.local().scope_type(gs.into_iter().map(|(_,g)|g.to_owned())))?;
+                env.types.add(n);
+                env.exps.add(n);
+                ElementID::Struct(var, p)
             },
             Element::Enum(n, gs, vs) => {
-                let ty_id = env.ty.add(n, TypeVal::new(gs.into_iter().map(|(v,_)|*v).collect()));
-                let ty = TypeID::Gen(ty_id.into(), gs.into_iter().enumerate().map(|(i,(v,_))|(*v, TypeID::Gen(LocalID::new(i), vec![]))).collect());
-                let gs = gs.into_iter().map(|(_,g)|(g, TypeVal::new(vec![]))).collect::<Vec<_>>();
-                let vs = vs.into_iter().map(|(n,t)|Ok((n, t.to_id(&env.local().scope_ty(gs.clone()))?))).collect::<Result<Vec<_>,ErrAst<T>>>()?;
-                let mut atoms = vec![];
-                let mut comps = vec![];
-                let val = {
-                    let mut space = env.exp.child_scope();
-                    for (v, p) in vs {
-                        if let Some(p) = p {
-                            comps.push(space.add(v, ExpVal::new_empty(TypeID::Gen(FN_ID.into(), vec!((Contravariant, p), (Covariant, ty.clone()))), gs.len())));
-                        } else {
-                            atoms.push(space.add(v, ExpVal::new_empty(ty.clone(), gs.len())));
-                        }
-                    }
-                    space.to_val()
-                };
-                env.exp.add_val(n, val);
-                let ty = env.ty.get_mut(ty_id);
-                for atom in atoms {
-                    ty.push_atom(atom);
+                env.types.add(n);
+                {
+                    let mut sub_space = env.exps.sub_space(n);
+                    vs.into_iter().for_each(|(v,_)|{sub_space.add(v);});
                 }
-                for comp in comps {
-                    ty.push_comp(comp);
-                }
+                let var = gs.into_iter().map(|(v,_)|*v).collect();
+                let vs = {
+                    let env = env.local();
+                    let env = &env.scope_type(gs.into_iter().map(|(_,g)|g));
+                    vs.into_iter().map(|(_,p)|p.to_id(env)).collect::<Result<_,_>>()?
+                };
+                ElementID::Enum(var, vs)
             },
-            Element::Let(n, gs, an, e) => {
-                let (e_id, e_ty) = {
+            Element::Let(n, gs, t, e) => {
+                let (t, e) = {
                     let env = env.local();
-                    let env = env.scope_ty(gs.into_iter().map(|g|(g, TypeVal::new(vec![]))).collect());
-                    let e_id = e.to_id(&env)?;
-                    let e_ty = e_id.type_check(&env)?;
-                    (e_id, e_ty)
+                    let env = &env.scope_type(gs.clone());
+                    (t.to_id(env)?, e.to_id(env)?)
                 };
-                if let Some(t) = an {
-                    let t = t.to_id(&env.local())?;
-                    if e_ty != t {
-                        return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, t)));
-                    }
-                }
-                env.exp.add(n, ExpVal::new(e_id, e_ty, gs.len()));
+                env.exps.add(n);
+                ElementID::Let(gs.len(), t, e)
             },
-            Element::Func(n, gs, None, ps) => {
-                let f = {
-                    let env = env.local();
-                    let env = env.scope_ty(gs.into_iter().map(|g|(g, TypeVal::new(vec![]))).collect());
-                    let e = ExpID::Closure(ps.to_id(&env)?);
-                    let t = e.type_check(&env)?;
-                    ExpVal::new(e, t, gs.len())
-                };
-
-                env.exp.add(n, f);
-            },
-            Element::Func(n, gs, Some(re), ps) => {
-                let gs: Vec<_> = gs.into_iter().map(|g|(g, TypeVal::new(vec![]))).collect();
-                let t = {
-                    let env = env.local();
-                    let env = env.scope_ty(gs.clone());
-                    let re = re.to_id(&env)?;
-                    let mut t_in = None;
-                    for (p,_) in ps {
-                        let t = p.to_id(&env)?.type_check(&env)?;
-                        if let Some(ref t_in) = t_in {
-                            if t != *t_in { return Err(ErrAst::ErrID(ErrID::TypeMismatch(t, t_in.clone()))); }
-                        } else {
-                            t_in = Some(t)
-                        }
-                    }
-                    func(t_in.unwrap(), re)
-                };
-                let id = env.exp.add(n, ExpVal::new_empty(t.clone(), gs.len()));
-                let f = {
-                    let env = env.local();
-                    let env = env.scope_ty(gs);
-                    let e = ExpID::Closure(ps.to_id(&env)?);
-                    let e_ty = e.type_check(&env)?;
-                    if e_ty != t { return Err(ErrAst::ErrID(ErrID::TypeMismatch(e_ty, t))); }
-                    e
-                };
-
-                env.exp.get_mut(id).set_val(f);
+            Element::Func(n, gs, re, ps) => {
+                env.exps.add(n);
+                let env = env.local();
+                let env = &env.scope_type(gs.clone());
+                let re = re.to_id(env)?;
+                let e = ps.to_id(env)?;
+                ElementID::Func(gs.len(), re, e)
             },
             Element::Proof(n, gs, p, proof) => {
-                let proof = {
+                let (p, proof) = {
                     let env = env.local();
-                    let gs = gs.into_iter().map(|g|(g, TypeVal::new(vec![]))).collect();
-                    let env = env.scope_ty(gs);
-                    
-                    if let Some(p) = p {
-                        let p = p.to_id(&env)?;
-                        let env = env.scope(p.bound());
-                        let proof = proof.to_id(&env)?.execute(&env, &MatchEnv::new())?;
-                        let t = p.type_check(&env)?;
-                        ExpID::Call(Box::new(ExpID::Var(FORALL_ID.into(), vec![t])), Box::new(ExpID::Closure(vec![(p, proof)])))
-                    } else {
-                        proof.to_id(&env)?.execute(&env, &MatchEnv::new())?
+                    let env = &env.scope_type(gs.clone());
+                    match p {
+                        Some(p) => {
+                            let (p, proof) = (p, proof).to_id(env)?;
+                            (Some(p), proof)
+                        },
+                        None => (None, proof.to_id(env)?),
                     }
                 };
-
-                env.truth.add(n, TruthVal::new(proof, gs.len()));
-            },
-        }
-
-        Ok(())
+                env.truths.add(n);
+                ElementID::Proof(gs.len(), p, proof)
+            }
+        })
     }
 }
