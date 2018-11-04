@@ -238,9 +238,9 @@ impl<'f> Parse<'f> for Proof<Word<'f>> {
             },
             Rule::proof_block => {
                 let mut inner = pair.into_inner();
-                let v = inner.next().unwrap().into_inner().map(parse_t2).collect();
+                let (n, def) = parse_t2(inner.next().unwrap());
                 let p = parse(&mut inner);
-                Proof::Block(v, Box::new(p))
+                Proof::Block(n, Box::new(def), Box::new(p))
             },
             Rule::proof_match => {
                 let mut inner = pair.into_inner();

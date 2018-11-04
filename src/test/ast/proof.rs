@@ -150,6 +150,20 @@ fn id_call() {
 }
 
 #[test]
+fn block() {
+    let mut names = NameData::new();
+    let space = predef_space(&mut names);
+    let env = predef();
+    let p = Proof::parse("{
+        let t = def({ true => false, false => true }(true))
+        let f = def({ true => true, false => false }(false))
+        f~t[1]
+    }");
+    let p = p.to_id(&space.local()).unwrap().execute(&env.local(), &MatchEnv::new()).unwrap();
+    assert_eq!(p, Exp::parse("eq<Bool>({ true => true, false => false }(false), { true => false, false => true }(true))").to_id(&mut space.local()).unwrap())
+}
+
+#[test]
 fn double_negate() {
     let mut names = NameData::new();
     let mut space = predef_space(&mut names);

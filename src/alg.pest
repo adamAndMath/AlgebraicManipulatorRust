@@ -45,10 +45,9 @@ truth_dir = { "." | "~" }
 truth_ref = { path ~ type_arg ~ exp_tuple? }
 substitute = { truth_dir ~ truth_ref ~ tree }
 
-proof = _{ proof_match | proof_sequence | proof_block }
+proof = _{ proof_match | proof_sequence | "{" ~ proof_block ~ "}" }
 proof_sequence = { truth_ref ~ substitute* }
-proof_block = { "{" ~ proof_block_defs ~ proof ~ "}" }
-proof_block_defs = { proof_block_def* }
+proof_block = { proof_block_def ~ ( proof_block | proof ) }
 proof_block_def = { "let" ~ name ~ "=" ~ proof }
 proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
 proof_arm = { pattern ~ "=>" ~ proof }

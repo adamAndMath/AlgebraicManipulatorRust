@@ -34,7 +34,7 @@ impl<T> TruthRef<T> {
 #[derive(Debug)]
 pub enum Proof<T> {
     Sequence(TruthRef<T>, Vec<(Direction, TruthRef<T>, Tree)>),
-    Block(Vec<(T, Proof<T>)>, Box<Proof<T>>),
+    Block(T, Box<Proof<T>>, Box<Proof<T>>),
     Match(Exp<T>, Vec<(Pattern<T>, Proof<T>)>),
 }
 
@@ -43,8 +43,8 @@ impl<T: Clone + AsRef<str>> ToID<T> for Proof<T> {
     fn to_id(&self, env: &LocalNamespaces) -> Result<ProofID, ErrAst<T>> {
         Ok(match self {
             Proof::Sequence(initial, rest) => ProofID::Sequence(initial.to_id(env)?, rest.into_iter().map(|(d,p,t)|Ok((*d, p.to_id(env)?, t.clone()))).collect::<Result<_,ErrAst<T>>>()?),
-            Proof::Block(vars, end) => unimplemented!(),
-            Proof::Match(exp, cases) => ProofID::Match(exp.to_id(env)?, cases.to_id(env)?)
+            Proof::Block(n, def, proof) => ProofID::Block(def.to_id(env)?, proof.to_id(&env.scope_truth(vec![n]))?),
+            Proof::Match(exp, cases) => ProofID::Match(exp.to_id(env)?, cases.to_id(env)?),
         })
     }
 }

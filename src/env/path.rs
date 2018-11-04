@@ -8,10 +8,6 @@ impl<T> Path<T> {
         Path(v)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.0.iter()
-    }
-
     pub fn len(&self) -> usize {
         self.0.len()
     }

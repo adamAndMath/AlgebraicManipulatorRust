@@ -2,7 +2,7 @@ use predef::*;
 use envs::LocalEnvs;
 use id::{ Type, Exp, ErrID, SetLocal };
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TruthVal {
     e: Exp,
     gs: usize,

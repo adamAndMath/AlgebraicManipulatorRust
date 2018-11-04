@@ -112,7 +112,7 @@ impl TruthRef {
 #[derive(Debug, Clone)]
 pub enum Proof {
     Sequence(TruthRef, Vec<(Direction, TruthRef, Tree)>),
-    Block(Vec<Proof>, Box<Proof>),
+    Block(Box<Proof>, Box<Proof>),
     Match(Exp, Vec<(Pattern, Proof)>),
 }
 
@@ -126,6 +126,10 @@ impl Proof {
                 }
                 proof
             },
+            Proof::Block(def, proof) => {
+                let def = def.execute(env, match_env)?;
+                proof.execute(&env.scope_truth(vec![TruthVal::new(def, 0)]), match_env)?
+            }
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
                 for (pattern, proof) in v {
@@ -140,7 +144,6 @@ impl Proof {
                 }
                 re.unwrap()
             }
-            _ => unimplemented!(),
         })
     }
 }
