@@ -21,7 +21,7 @@ impl<'a> MatchEnv<'a> {
     }
 
     pub fn get(&self, k: &Exp) -> Option<Exp> {
-        self.data.iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||k.pop_id(1).and_then(|k|self.parent.and_then(|p|p.get(&k))))
+        self.data.iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||self.parent.and_then(|p|k.pop_id(1).and_then(|k|p.get(&k).map(|v|v.push_id(1)))))
     }
 
     #[cfg(test)]
