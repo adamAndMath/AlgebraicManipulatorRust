@@ -18,6 +18,7 @@ type_arg = { ( "<" ~ ty ~ ("," ~ ty)* ~ ">" )? }
 type_par = { ( "<" ~ name ~ ("," ~ name)* ~ ">" )? }
 type_gen = { ( "<" ~ type_variance ~ ("," ~ type_variance)* ~ ">" )? }
 type_variance = { variance ~ name }
+par = { pattern_tuple? }
 of_type = { ( ":" ~ ty )? }
 return_type = { ( "->" ~ ty )? }
 clauses = { ("where")? }
@@ -45,14 +46,14 @@ truth_dir = { "." | "~" }
 truth_ref = { path ~ type_arg ~ exp_tuple? }
 substitute = { truth_dir ~ truth_ref ~ tree }
 
-proof = _{ proof_match | proof_sequence | "{" ~ proof_block ~ "}" }
+proof = _{ proof_match | proof_sequence | proof_block }
 proof_sequence = { truth_ref ~ substitute* }
-proof_block = { proof_block_def ~ ( proof_block | proof ) }
-proof_block_def = { "let" ~ name ~ "=" ~ proof }
+proof_block = { "{" ~ proof_block_def ~ proof ~ "}" }
+proof_block_def = { element* }
 proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
 proof_arm = { pattern ~ "=>" ~ proof }
 
-element = _{ "mod" ~ elm_mod | "use" ~ elm_use | "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
+element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
 elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
 elm_struct_par = { ty_tuple? }
 elm_enum = { name ~ type_gen ~ clauses ~ "{" ~ elm_emum_variant ~ ("," ~ elm_emum_variant)* ~ ","? ~ "}" }
@@ -60,7 +61,7 @@ elm_emum_variant = { name ~ elm_struct_par }
 elm_let = { name ~ type_par ~ of_type ~ clauses ~ "=" ~ exp }
 elm_func = { name ~ type_par ~ pattern_tuple ~ return_type ~ clauses ~ "=" ~ exp }
 elm_func_match = { name ~ type_par ~ return_type ~ clauses ~ exp_match }
-elm_proof = { name ~ type_par ~ pattern_tuple ~ clauses ~ "=" ~ proof }
+elm_proof = { name ~ type_par ~ par ~ clauses ~ "=" ~ proof }
 
 module = _{ "mod" ~ elm_mod | "use" ~ elm_use | element }
 elm_mod = { name ~ elm_mod_scope? }

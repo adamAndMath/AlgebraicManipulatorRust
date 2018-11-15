@@ -174,6 +174,13 @@ impl<'f> Parse<'f> for Pattern<Word<'f>> {
     }
 }
 
+impl<'f> Parse<'f> for Option<Pattern<Word<'f>>> {
+    const R: Rule = Rule::par;
+    fn parse_pair(pair: Pair<'f>) -> Self {
+        pair.into_inner().next().map(Pattern::parse_pair)
+    }
+}
+
 impl<'f> Parse<'f> for Exp<Word<'f>> {
     const R: Rule = Rule::exp;
     fn parse_pair(pair: Pair<'f>) -> Self {
@@ -238,9 +245,9 @@ impl<'f> Parse<'f> for Proof<Word<'f>> {
             },
             Rule::proof_block => {
                 let mut inner = pair.into_inner();
-                let (n, def) = parse_t2(inner.next().unwrap());
+                let elm = parse_vec(&mut inner);
                 let p = parse(&mut inner);
-                Proof::Block(n, Box::new(def), Box::new(p))
+                Proof::Block(elm, Box::new(p))
             },
             Rule::proof_match => {
                 let mut inner = pair.into_inner();
@@ -309,10 +316,10 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
                 let mut inner = pair.into_inner();
                 let name = parse(&mut inner);
                 let gen = parse_vec(&mut inner);
-                let pattern = inner.next().map(Parse::parse_pair);
+                let par = parse(&mut inner);
                 inner.next();
                 let proof = parse(&mut inner);
-                Element::Proof(name, gen, pattern, proof)
+                Element::Proof(name, gen, par, proof)
             },
             r => unreachable!("{:?}", r),
         }

@@ -165,8 +165,8 @@ fn block() {
     let mut data = predef_data();
     let env = Envs::new(&mut data);
     let p = Proof::parse("{
-        let t = def({ true => false, false => true }(true))
-        let f = def({ true => true, false => false }(false))
+        proof t = def({ true => false, false => true }(true))
+        proof f = def({ true => true, false => false }(false))
         f~t[1]
     }");
     let p = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new()).unwrap();

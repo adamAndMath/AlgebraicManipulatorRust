@@ -1,7 +1,7 @@
 use predef::*;
 use env::{ ID, PushID };
 use envs::{ Envs, TruthVal };
-use super::{ Type, Pattern, Exp, ErrID, SetLocal, TypeCheck };
+use super::{ Type, Pattern, Exp, Element, ErrID, SetLocal, TypeCheck };
 use tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,10 +108,10 @@ impl TruthRef {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Proof {
     Sequence(TruthRef, Vec<(Direction, TruthRef, Tree)>),
-    Block(Box<Proof>, Box<Proof>),
+    Block(Vec<Element>, Box<Proof>),
     Match(Exp, Vec<(Pattern, Proof)>),
 }
 
@@ -125,9 +125,13 @@ impl Proof {
                 }
                 proof
             },
-            Proof::Block(def, proof) => {
-                let def = def.execute(env, match_env)?;
-                proof.execute(&env.scope_truth(vec![TruthVal::new(def, 0)]), &match_env.scope(vec![]))?.pop_id(1).ok_or(ErrID::NotContained)?
+            Proof::Block(elm, proof) => {
+                let match_env = &match_env.scope(vec![]);
+                let mut env = env.scope_empty();
+                for elm in elm {
+                    elm.define(&mut env)?;
+                }
+                proof.execute(&env, match_env)?.pop_id(1).ok_or(ErrID::NotContained)?
             }
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
