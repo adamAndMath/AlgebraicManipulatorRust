@@ -9,7 +9,7 @@ mod set_local;
 
 pub use self::ty::Type;
 pub use self::exp::Exp;
-pub use self::pattern::Pattern;
+pub use self::pattern::*;
 pub use self::proof::*;
 pub use self::element::Element;
 pub use self::id_err::ErrID;
@@ -22,6 +22,7 @@ pub mod renamed {
         Type as TypeID,
         Exp as ExpID,
         Pattern as PatternID,
+        Patterned as PatternedID,
         TruthRef as TruthRefID,
         Proof as ProofID,
         Element as ElementID,

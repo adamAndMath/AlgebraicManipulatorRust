@@ -181,6 +181,16 @@ impl<'f> Parse<'f> for Option<Pattern<Word<'f>>> {
     }
 }
 
+impl<'f> Parse<'f> for Patterned<Word<'f>, Exp<Word<'f>>> {
+    const R: Rule = Rule::exp_arm;
+    fn parse_pair(pair: Pair<'f>) -> Self {
+        let mut inner = pair.into_inner();
+        let pattern = parse(&mut inner);
+        let exp = parse(&mut inner);
+        Patterned(pattern, exp)
+    }
+}
+
 impl<'f> Parse<'f> for Exp<Word<'f>> {
     const R: Rule = Rule::exp;
     fn parse_pair(pair: Pair<'f>) -> Self {
@@ -204,8 +214,8 @@ impl<'f> Parse<'f> for Exp<Word<'f>> {
                     Exp::Tuple(es)
                 }
             },
-            Rule::exp_match => Exp::Closure(pair.into_inner().map(parse_t2).collect()),
-            Rule::exp_lambda => Exp::Closure(vec![parse_t2(pair)]),
+            Rule::exp_match => Exp::Closure(pair.into_inner().map(Patterned::parse_pair).collect()),
+            Rule::exp_lambda => Exp::Closure(vec![Patterned::parse_pair(pair)]),
             r => unreachable!("{:?}", r),
         }
     }
@@ -233,6 +243,16 @@ impl<'f> Parse<'f> for (Direction, TruthRef<Word<'f>>, Tree) {
     }
 }
 
+impl<'f> Parse<'f> for Patterned<Word<'f>, Proof<Word<'f>>> {
+    const R: Rule = Rule::proof_arm;
+    fn parse_pair(pair: Pair<'f>) -> Self {
+        let mut inner = pair.into_inner();
+        let pattern = parse(&mut inner);
+        let proof = parse(&mut inner);
+        Patterned(pattern, proof)
+    }
+}
+
 impl<'f> Parse<'f> for Proof<Word<'f>> {
     const R: Rule = Rule::proof;
     fn parse_pair(pair: Pair<'f>) -> Self {
@@ -252,8 +272,19 @@ impl<'f> Parse<'f> for Proof<Word<'f>> {
             Rule::proof_match => {
                 let mut inner = pair.into_inner();
                 let e = parse(&mut inner);
-                let v = inner.map(parse_t2).collect();
+                let v = parse_vec(&mut inner);
                 Proof::Match(e, v)
+            },
+            Rule::proof_forall => {
+                let mut inner = pair.into_inner();
+                let pattern: Pattern<_> = parse(&mut inner);
+                let proof = parse(&mut inner);
+                Proof::Forall(vec![Patterned(pattern, proof)])
+            },
+            Rule::proof_forall_block => {
+                let mut inner = pair.into_inner();
+                let arms = parse_vec(&mut inner);
+                Proof::Forall(arms)
             },
             r => unreachable!("{:?}", r),
         }
@@ -301,7 +332,7 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
                 let re = inner.next().unwrap().into_inner().next().map(Parse::parse_pair);
                 inner.next();
                 let exp = parse(&mut inner);
-                Element::Func(name, gen, re, vec![(pattern, exp)])
+                Element::Func(name, gen, re, vec![Patterned(pattern, exp)])
             },
             Rule::elm_func_match => {
                 let mut inner = pair.into_inner();
@@ -309,7 +340,7 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
                 let gen = parse_vec(&mut inner);
                 let re = inner.next().unwrap().into_inner().next().map(Parse::parse_pair);
                 inner.next();
-                let exp = inner.next().unwrap().into_inner().map(parse_t2).collect::<Vec<_>>();
+                let exp = parse_vec(&mut inner);
                 Element::Func(name, gen, re, exp)
             },
             Rule::elm_proof => {
@@ -319,7 +350,20 @@ impl<'f> Parse<'f> for Element<Word<'f>> {
                 let par = parse(&mut inner);
                 inner.next();
                 let proof = parse(&mut inner);
-                Element::Proof(name, gen, par, proof)
+
+                Element::Proof(name, gen, match par {
+                    Some(par) => Proof::Forall(vec![Patterned(par, proof)]),
+                    None => proof,
+                })
+            },
+            Rule::elm_proof_forall => {
+                let mut inner = pair.into_inner();
+                let name = parse(&mut inner);
+                let gen = parse_vec(&mut inner);
+                inner.next();
+                let arms = parse_vec(&mut inner);
+
+                Element::Proof(name, gen, Proof::Forall(arms))
             },
             r => unreachable!("{:?}", r),
         }

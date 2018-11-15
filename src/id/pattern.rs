@@ -4,6 +4,9 @@ use envs::*;
 use super::{ Type, Exp, ErrID, TypeCheck, TypeCheckIter, SetLocal };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Patterned<T>(pub Pattern, pub T);
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Pattern {
     Var(Type),
     Atom(ID<ExpVal>, Vec<Type>),
@@ -34,23 +37,23 @@ impl TypeCheck for Pattern {
     }
 }
 
-impl<T: TypeCheck> TypeCheck for (Pattern, T) {
+impl<T: TypeCheck> TypeCheck for Patterned<T> {
     fn type_check(&self, env: &Envs) -> Result<Type, ErrID> {
-        let (p, e) = self;
+        let Patterned(p, e) = self;
         let b = e.type_check(&env.scope_exp(p.bound()))?;
         Ok(func(p.type_check(&env.scope_exp(vec![]))?, b).pop_id(1).unwrap())
     }
 }
 
-impl<U: PushID> PushID for (Pattern, U) {
+impl<T: PushID> PushID for Patterned<T> {
     fn push_id_with_min(&self, min: usize, amount: usize) -> Self {
-        let (p, e) = self;
-        (p.push_id_with_min(min + 1, amount), e.push_id_with_min(min + 1, amount))
+        let Patterned(p, e) = self;
+        Patterned(p.push_id_with_min(min + 1, amount), e.push_id_with_min(min + 1, amount))
     }
 
     fn pop_id_with_min(&self, min: usize, amount: usize) -> Option<Self> {
-        let (p, e) = self;
-        Some((p.pop_id_with_min(min + 1, amount)?, e.pop_id_with_min(min + 1, amount)?))
+        let Patterned(p, e) = self;
+        Some(Patterned(p.pop_id_with_min(min + 1, amount)?, e.pop_id_with_min(min + 1, amount)?))
     }
 }
 
@@ -74,10 +77,10 @@ impl PushID for Pattern {
     }
 }
 
-impl<T, U: SetLocal<T>> SetLocal<T> for (Pattern, U) where Pattern: SetLocal<T> {
+impl<T, U: SetLocal<T>> SetLocal<T> for Patterned<U> where Pattern: SetLocal<T> {
     fn set_with_min(&self, min: usize, par: &[T]) -> Self {
-        let (p, e) = self;
-        (p.set_with_min(min + 1, par), e.set_with_min(min + 1, par))
+        let Patterned(p, e) = self;
+        Patterned(p.set_with_min(min + 1, par), e.set_with_min(min + 1, par))
     }
 }
 

@@ -1,5 +1,5 @@
 use envs::*;
-use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID, ToIDMut };
+use super::{ Type, Patterned, Exp, Proof, ErrAst, ToID, ToIDMut };
 use variance::Variance;
 use id::renamed::ElementID;
 
@@ -8,8 +8,8 @@ pub enum Element<T> {
     Struct(T, Vec<(Variance, T)>, Option<Type<T>>),
     Enum(T, Vec<(Variance, T)>, Vec<(T, Option<Type<T>>)>),
     Let(T, Vec<T>, Option<Type<T>>, Exp<T>),
-    Func(T, Vec<T>, Option<Type<T>>, Vec<(Pattern<T>, Exp<T>)>),
-    Proof(T, Vec<T>, Option<Pattern<T>>, Proof<T>),
+    Func(T, Vec<T>, Option<Type<T>>, Vec<Patterned<T, Exp<T>>>),
+    Proof(T, Vec<T>, Proof<T>),
 }
 
 impl<T: Clone + AsRef<str>> ToIDMut<T> for Element<T> {
@@ -55,20 +55,14 @@ impl<T: Clone + AsRef<str>> ToIDMut<T> for Element<T> {
                 let e = ps.to_id(env)?;
                 ElementID::Func(gs.len(), re, e)
             },
-            Element::Proof(n, gs, p, proof) => {
-                let (p, proof) = {
+            Element::Proof(n, gs, proof) => {
+                let proof = {
                     let mut names = NameData::new();
                     let env = &env.scope_type(&mut names, gs.clone());
-                    match p {
-                        Some(p) => {
-                            let (p, proof) = (p, proof).to_id(env)?;
-                            (Some(p), proof)
-                        },
-                        None => (None, proof.to_id(env)?),
-                    }
+                    proof.to_id(env)?
                 };
                 env.truths.add(n);
-                ElementID::Proof(gs.len(), p, proof)
+                ElementID::Proof(gs.len(), proof)
             }
         })
     }

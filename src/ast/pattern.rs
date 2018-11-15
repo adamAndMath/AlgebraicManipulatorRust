@@ -1,7 +1,10 @@
 use env::Path;
 use envs::{ NameData, Namespaces };
 use super::{ Type, ErrAst, ToID, ToIDMut };
-use id::renamed::PatternID;
+use id::renamed::{ PatternID, PatternedID };
+
+#[derive(Debug)]
+pub struct Patterned<S, T>(pub Pattern<S>, pub T);
 
 #[derive(Debug)]
 pub enum Pattern<S> {
@@ -26,26 +29,14 @@ impl<S: Clone + AsRef<str>> ToIDMut<S> for Pattern<S> {
     }
 }
 
-impl<'a, S: Clone + AsRef<str>, T: ToID<S>> ToID<S> for (&'a Pattern<S>, &'a T) {
-    type To = (PatternID, T::To);
-    fn to_id(&self, env: &Namespaces) -> Result<(PatternID, T::To), ErrAst<S>> {
-        let (p, e) = self;
+impl<S: Clone + AsRef<str>, T: ToID<S>> ToID<S> for Patterned<S, T> {
+    type To = PatternedID<T::To>;
+    fn to_id(&self, env: &Namespaces) -> Result<PatternedID<T::To>, ErrAst<S>> {
+        let Patterned(p, e) = &self;
         let mut names = NameData::new();
         let mut env = env.scope_empty(&mut names);
         let p = p.to_id_mut(&mut env)?;
         let e = e.to_id(&env)?;
-        Ok((p, e))
-    }
-}
-
-impl<S: Clone + AsRef<str>, T: ToID<S>> ToID<S> for (Pattern<S>, T) {
-    type To = (PatternID, T::To);
-    fn to_id(&self, env: &Namespaces) -> Result<(PatternID, T::To), ErrAst<S>> {
-        let (p, e) = (&self.0, &self.1);
-        let mut names = NameData::new();
-        let mut env = env.scope_empty(&mut names);
-        let p = p.to_id_mut(&mut env)?;
-        let e = e.to_id(&env)?;
-        Ok((p, e))
+        Ok(PatternedID(p, e))
     }
 }

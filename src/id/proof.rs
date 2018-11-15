@@ -1,7 +1,7 @@
 use predef::*;
 use env::{ ID, PushID };
 use envs::{ Envs, TruthVal };
-use super::{ Type, Pattern, Exp, Element, ErrID, SetLocal, TypeCheck };
+use super::{ Type, Pattern, Patterned, Exp, Element, ErrID, SetLocal, TypeCheck };
 use tree::Tree;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +46,7 @@ impl TruthRef {
                             Exp::Closure(v) => v.clone(),
                             _ => unimplemented!(),
                         }.into_iter()
-                            .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
+                            .filter_map(|Patterned(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
                             .next()
                             .ok_or(ErrID::NoMatch(arg.clone()))?,
                     _ => unimplemented!(),
@@ -90,7 +90,8 @@ impl TruthRef {
 pub enum Proof {
     Sequence(TruthRef, Vec<(Direction, TruthRef, Tree)>),
     Block(Vec<Element>, Box<Proof>),
-    Match(Exp, Vec<(Pattern, Proof)>),
+    Match(Exp, Vec<Patterned<Proof>>),
+    Forall(Vec<Patterned<Proof>>),
 }
 
 impl Proof {
@@ -109,10 +110,10 @@ impl Proof {
                     elm.define(&mut env)?;
                 }
                 proof.execute(&env)?.pop_id(1).ok_or(ErrID::NotContained)?
-            }
+            },
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
-                for (pattern, proof) in v {
+                for Patterned(pattern, proof) in v {
                     let p = proof.execute(&env.scope_match(pattern.bound(), expand(0, &e.push_id(1), pattern)?))?.pop_id(1).ok_or(ErrID::NotContained)?;
                     if let Some(re) = &re {
                         if *re != p {
@@ -123,7 +124,22 @@ impl Proof {
                     re = Some(p);
                 }
                 re.unwrap()
-            }
+            },
+            Proof::Forall(v) => {
+                let mut t_in = None;
+                for Patterned(p,_) in v {
+                    let t = p.type_check(&env.scope_empty())?;
+                    if let Some(ref t_in) = t_in {
+                        if t != *t_in { return Err(ErrID::TypeMismatch(t, t_in.clone())); }
+                    } else {
+                        t_in = Some(t);
+                    }
+                }
+                let t_in = t_in.unwrap().pop_id(1).unwrap();
+                let v = v.iter().map(|Patterned(pattern, proof)| Ok(Patterned(pattern.clone(), proof.execute(&env.scope_exp(pattern.bound()))?))).collect::<Result<_,ErrID>>()?;
+                let closure = Exp::Closure(v);
+                Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![t_in])), Box::new(closure))
+            },
         })
     }
 }

@@ -159,6 +159,17 @@ fn id_call() {
 }
 
 #[test]
+fn forall_proof() {
+    let mut names = NameData::new();
+    let space = predef_space(&mut names);
+    let mut data = predef_data();
+    let env = Envs::new(&mut data);
+    let p = Proof::parse("forall(x: Bool) -> ID<Bool>(x)");
+    let re = p.to_id(&space).unwrap().execute(&env);
+    assert_eq!(re, Ok(Exp::parse("forall<Bool>((x: Bool) -> eq<Bool>(x, x))").to_id(&space).unwrap()));
+}
+
+#[test]
 fn block() {
     let mut names = NameData::new();
     let space = predef_space(&mut names);

@@ -1,6 +1,6 @@
 use env::Path;
 use envs::{ NameData, Namespaces };
-use super::{ Type, Pattern, Exp, Element, ErrAst, ToID, ToIDMut };
+use super::{ Type, Patterned, Exp, Element, ErrAst, ToID, ToIDMut };
 use id::renamed::{ TruthRefID, ProofID, Direction, RefType };
 use tree::Tree;
 
@@ -35,7 +35,8 @@ impl<T> TruthRef<T> {
 pub enum Proof<T> {
     Sequence(TruthRef<T>, Vec<(Direction, TruthRef<T>, Tree)>),
     Block(Vec<Element<T>>, Box<Proof<T>>),
-    Match(Exp<T>, Vec<(Pattern<T>, Proof<T>)>),
+    Match(Exp<T>, Vec<Patterned<T, Proof<T>>>),
+    Forall(Vec<Patterned<T, Proof<T>>>),
 }
 
 impl<T: Clone + AsRef<str>> ToID<T> for Proof<T> {
@@ -51,6 +52,7 @@ impl<T: Clone + AsRef<str>> ToID<T> for Proof<T> {
                 ProofID::Block(elm, proof)
             },
             Proof::Match(exp, cases) => ProofID::Match(exp.to_id(env)?, cases.to_id(env)?),
+            Proof::Forall(p) => ProofID::Forall(p.to_id(env)?),
         })
     }
 }

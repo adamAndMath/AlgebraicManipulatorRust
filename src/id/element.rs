@@ -2,15 +2,15 @@ use predef::*;
 use env::{ ID, PushID };
 use envs::{ Envs, TypeVal, ExpVal, TruthVal };
 use variance::Variance;
-use super::{ Type, Pattern, Exp, Proof, TypeCheck, ErrID };
+use super::{ Type, Patterned, Exp, Proof, TypeCheck, ErrID };
 
 #[derive(Debug)]
 pub enum Element {
     Struct(Vec<Variance>, Option<Type>),
     Enum(Vec<Variance>, Vec<Option<Type>>),
     Let(usize, Option<Type>, Exp),
-    Func(usize, Option<Type>, Vec<(Pattern, Exp)>),
-    Proof(usize, Option<Pattern>, Proof),
+    Func(usize, Option<Type>, Vec<Patterned<Exp>>),
+    Proof(usize, Proof),
 }
 
 impl Element {
@@ -58,7 +58,7 @@ impl Element {
                 let t = {
                     let env = &env.scope_ty(gs.clone());
                     let mut t_in = None;
-                    for (p,_) in ps {
+                    for Patterned(p,_) in ps {
                         let t = p.type_check(&env.scope_empty())?;
                         if let Some(ref t_in) = t_in {
                             if t != *t_in { return Err(ErrID::TypeMismatch(t, t_in.clone())); }
@@ -79,18 +79,11 @@ impl Element {
 
                 env.exp[id].set_val(f);
             },
-            Element::Proof(gs, p, proof) => {
+            Element::Proof(gs, proof) => {
                 let proof = {
                     let env = env.scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect());
                     
-                    if let Some(p) = p {
-                        let env = env.scope_exp(p.bound());
-                        let proof = proof.execute(&env)?;
-                        let t = p.type_check(&env)?;
-                        Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![t])), Box::new(Exp::Closure(vec![(p.clone(), proof)])))
-                    } else {
-                        proof.execute(&env)?
-                    }
+                    proof.execute(&env)?
                 };
 
                 env.truth.add(TruthVal::new(proof, *gs));

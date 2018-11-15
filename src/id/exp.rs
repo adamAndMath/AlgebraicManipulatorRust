@@ -1,5 +1,5 @@
 use env::{ ID, PushID };
-use super::{ Type, Pattern, ErrID, TypeCheck, TypeCheckIter, SetLocal };
+use super::{ Type, Patterned, ErrID, TypeCheck, TypeCheckIter, SetLocal };
 use envs::{ ExpVal, Envs };
 use tree::{Tree, TreeChar };
 
@@ -7,7 +7,7 @@ use tree::{Tree, TreeChar };
 pub enum Exp {
     Var(ID<ExpVal>, Vec<Type>),
     Tuple(Vec<Exp>),
-    Closure(Vec<(Pattern, Exp)>),
+    Closure(Vec<Patterned<Exp>>),
     Call(Box<Exp>, Box<Exp>),
 }
 
@@ -99,10 +99,10 @@ impl Exp {
                 Exp::Closure(v) => {
                     path.is_within(0..v.len(), &[]).map_err(Err)?;
 
-                    Exp::Closure(v.into_iter().enumerate().map(|(i, (p, e))|
+                    Exp::Closure(v.into_iter().enumerate().map(|(i, Patterned(p, e))|
                         match path.get(i) {
-                            Some(path) => e.apply(path, push+1, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
-                            None => Ok((p.clone(), e.clone())),
+                            Some(path) => e.apply(path, push+1, f).map(|e|Patterned(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            None => Ok(Patterned(p.clone(), e.clone())),
                         }
                     ).collect::<Result<_,_>>()?)
                 },

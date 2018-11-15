@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use env::{ ID, PushID };
 use envs::*;
 use variance::Variance::*;
-use id::{ Type, Pattern, Exp, ErrID };
+use id::{ Type, Pattern, Patterned, Exp, ErrID };
 
 pub const TRUE_ID: ID<ExpVal> = ID::Predef(0, PhantomData);
 pub const FALSE_ID: ID<ExpVal> = ID::Predef(1, PhantomData);
@@ -55,7 +55,7 @@ pub fn predef_data<'a>() -> EnvData {
             ExpVal::new_empty(eq_ty, 1),
         ],
         truths: vec![
-            TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID, vec![Type::Gen(ID::new(0), vec![])])), Box::new(Exp::Closure(vec![(Pattern::Var(Type::Gen(ID::new(0).push_id(1), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID, vec![Type::Gen(ID::new(0).push_id(1), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(ID::new(0), vec![]), Exp::Var(ID::new(0), vec![])]))))]))), 1)
+            TruthVal::new(Exp::Call(Box::new(Exp::Var(FORALL_ID, vec![Type::Gen(ID::new(0), vec![])])), Box::new(Exp::Closure(vec![Patterned(Pattern::Var(Type::Gen(ID::new(0).push_id(1), vec![])), Exp::Call(Box::new(Exp::Var(EQ_ID, vec![Type::Gen(ID::new(0).push_id(1), vec![])])), Box::new(Exp::Tuple(vec![Exp::Var(ID::new(0), vec![]), Exp::Var(ID::new(0), vec![])]))))]))), 1)
         ],
     }
 }

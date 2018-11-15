@@ -1,7 +1,7 @@
 use predef::*;
 use env::ID;
 use envs::Envs;
-use id::{ Type, Exp, ErrID, SetLocal };
+use id::{ Type, Patterned, Exp, ErrID, SetLocal };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TruthVal {
@@ -21,7 +21,7 @@ impl TruthVal {
             e = if let Exp::Call(box Exp::Var(f, _), box Exp::Closure(v)) = &e {
                 if *f != FORALL_ID { return Err(ErrID::ExpMismatch(Exp::Var(f.clone(), vec![]), Exp::Var(FORALL_ID.into(), vec![]))); }
                 v.into_iter()
-                    .filter_map(|(p,a)|{let v = p.match_exp(arg.clone(), env).ok()?; Some(a.set(&v))})
+                    .filter_map(|Patterned(p,a)|p.match_exp(arg.clone(), env).ok().map(|v|a.set(&v)))
                     .next()
                     .ok_or(ErrID::NoMatch(arg.clone()))?
             } else { return Err(ErrID::ExpMismatch(e.clone(), Exp::Var(FORALL_ID.into(), vec![]))); }

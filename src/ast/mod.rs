@@ -12,7 +12,7 @@ mod to_id_mut;
 pub use self::word::Word;
 pub use self::ty::Type;
 pub use self::exp::Exp;
-pub use self::pattern::Pattern;
+pub use self::pattern::*;
 pub use self::element::*;
 pub use self::proof::*;
 pub use self::module::Module;

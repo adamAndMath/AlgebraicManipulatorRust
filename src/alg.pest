@@ -18,7 +18,7 @@ type_arg = { ( "<" ~ ty ~ ("," ~ ty)* ~ ">" )? }
 type_par = { ( "<" ~ name ~ ("," ~ name)* ~ ">" )? }
 type_gen = { ( "<" ~ type_variance ~ ("," ~ type_variance)* ~ ">" )? }
 type_variance = { variance ~ name }
-par = { pattern_tuple? }
+par = { "(" ~ ")" | pattern_tuple? }
 of_type = { ( ":" ~ ty )? }
 return_type = { ( "->" ~ ty )? }
 clauses = { ("where")? }
@@ -46,14 +46,17 @@ truth_dir = { "." | "~" }
 truth_ref = { path ~ type_arg ~ exp_tuple? }
 substitute = { truth_dir ~ truth_ref ~ tree }
 
-proof = _{ proof_match | proof_sequence | proof_block }
+proof = _{ proof_match | proof_forall | proof_forall_block | proof_sequence | proof_block }
 proof_sequence = { truth_ref ~ substitute* }
 proof_block = { "{" ~ proof_block_def ~ proof ~ "}" }
 proof_block_def = { element* }
-proof_match = { "match" ~ exp ~ "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
+proof_forall = { "forall" ~ pattern_tuple ~ "->" ~ proof }
+proof_forall_block = { "forall" ~ proof_closure }
+proof_match = { "match" ~ exp ~ proof_closure }
+proof_closure = { "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
 proof_arm = { pattern ~ "=>" ~ proof }
 
-element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ elm_proof }
+element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ ( elm_proof | elm_proof_forall ) }
 elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
 elm_struct_par = { ty_tuple? }
 elm_enum = { name ~ type_gen ~ clauses ~ "{" ~ elm_emum_variant ~ ("," ~ elm_emum_variant)* ~ ","? ~ "}" }
@@ -62,6 +65,7 @@ elm_let = { name ~ type_par ~ of_type ~ clauses ~ "=" ~ exp }
 elm_func = { name ~ type_par ~ pattern_tuple ~ return_type ~ clauses ~ "=" ~ exp }
 elm_func_match = { name ~ type_par ~ return_type ~ clauses ~ exp_match }
 elm_proof = { name ~ type_par ~ par ~ clauses ~ "=" ~ proof }
+elm_proof_forall = { name ~ type_par ~ clauses ~ proof_closure }
 
 module = _{ "mod" ~ elm_mod | "use" ~ elm_use | element }
 elm_mod = { name ~ elm_mod_scope? }
