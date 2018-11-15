@@ -10,28 +10,6 @@ pub enum Direction {
     Backwards,
 }
 
-pub enum MatchEnv<'a> {
-    Base(),
-    Extended(&'a MatchEnv<'a>, Vec<(Exp, Exp)>),
-}
-
-impl<'a> MatchEnv<'a> {
-    pub fn new() -> Self {
-        MatchEnv::Base()
-    }
-
-    pub fn scope<'b>(&'b self, v: Vec<(Exp, Exp)>) -> MatchEnv<'b> {
-        MatchEnv::Extended(&self, v)
-    }
-
-    pub fn get(&self, k: &Exp) -> Option<Exp> {
-        match self {
-            MatchEnv::Base() => None,
-            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||k.pop_id(1).and_then(|k|b.get(&k))),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RefType {
     Ref(ID<TruthVal>),
@@ -51,7 +29,7 @@ impl TruthRef {
         TruthRef { id, gen, par }
     }
 
-    pub fn get(&self, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+    pub fn get(&self, env: &Envs) -> Result<Exp, ErrID> {
         match self.id {
             RefType::Ref(id) => env.truth[id].get(id, self.gen.clone(), self.par.clone(), env),
             RefType::Def => {
@@ -78,15 +56,15 @@ impl TruthRef {
             },
             RefType::Match => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?.clone();
-                let res = match_env.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
+                let res = env.mtch.get(&par).ok_or(ErrID::NoMatch(par.clone()))?;
                 let ty = par.type_check(env)?;
                 Ok(Exp::Call(Box::new(Exp::Var(EQ_ID.into(), vec![ty])), Box::new(Exp::Tuple(vec![par.clone(), res]))))
             },
         }
     }
 
-    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
-        let truth = self.get(env, match_env)?;
+    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &Envs) -> Result<Exp, ErrID> {
+        let truth = self.get(env)?;
         if let Exp::Call(box Exp::Var(eq, t), box Exp::Tuple(v)) = truth {
             if eq != EQ_ID { return Err(ErrID::ExpMismatch(Exp::Var(eq, vec![]), Exp::Var(EQ_ID.into(), vec![])))}
             if let [ref par, ref res] = v[..] {
@@ -116,27 +94,26 @@ pub enum Proof {
 }
 
 impl Proof {
-    pub fn execute(&self, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+    pub fn execute(&self, env: &Envs) -> Result<Exp, ErrID> {
         Ok(match self {
             Proof::Sequence(initial, rest) => {
-                let mut proof = initial.get(env, match_env)?;
+                let mut proof = initial.get(env)?;
                 for (dir, truth, path) in rest {
-                    proof = truth.apply(*dir, path, proof, env, match_env)?;
+                    proof = truth.apply(*dir, path, proof, env)?;
                 }
                 proof
             },
             Proof::Block(elm, proof) => {
-                let match_env = &match_env.scope(vec![]);
                 let mut env = env.scope_empty();
                 for elm in elm {
                     elm.define(&mut env)?;
                 }
-                proof.execute(&env, match_env)?.pop_id(1).ok_or(ErrID::NotContained)?
+                proof.execute(&env)?.pop_id(1).ok_or(ErrID::NotContained)?
             }
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
                 for (pattern, proof) in v {
-                    let p = proof.execute(&env.scope_exp(pattern.bound()), &match_env.scope(expand(0, &e.push_id(1), pattern)?))?.pop_id(1).ok_or(ErrID::NotContained)?;
+                    let p = proof.execute(&env.scope_match(pattern.bound(), expand(0, &e.push_id(1), pattern)?))?.pop_id(1).ok_or(ErrID::NotContained)?;
                     if let Some(re) = &re {
                         if *re != p {
                             return Err(ErrID::ExpMismatch(p, re.clone()));

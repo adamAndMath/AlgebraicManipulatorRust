@@ -1,9 +1,11 @@
+mod match_env;
 mod namespaces;
 mod envs;
 mod exp_val;
 mod type_val;
 mod truth_val;
 
+pub use self::match_env::MatchEnv;
 pub use self::namespaces::*;
 pub use self::envs::*;
 pub use self::exp_val::ExpVal;

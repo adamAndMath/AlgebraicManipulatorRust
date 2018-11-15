@@ -15,7 +15,7 @@ fn deref() {
     space.truths.add(&"a");
     env.truth.add(TruthVal::new(e_id.clone(), 0));
     let p = Proof::parse("a()");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(e_id));
 }
 
@@ -30,7 +30,7 @@ fn replace_nothing() {
     space.truths.add(&"b");
     env.truth.add(TruthVal::new(e_id, 0));
     let p = Proof::parse("b(false)");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
@@ -45,7 +45,7 @@ fn replace() {
     space.truths.add(&"b");
     env.truth.add(TruthVal::new(e_id, 0));
     let p = Proof::parse("b(false)");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -62,7 +62,7 @@ fn unwraping_var() {
     space.truths.add(&"b");
     env.truth.add(TruthVal::new(e_id, 0));
     let p = Proof::parse("b(false).def(x)[]");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(TRUE_ID)));
 }
 
@@ -87,7 +87,7 @@ fn unwraping_match() {
         (false, true) => false,
         (false, false) => false,
     }(true, false))[]");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -102,7 +102,7 @@ fn unwraping_lambda_call() {
     space.truths.add(&"m");
     env.truth.add(TruthVal::new(e_id, 0));
     let p = Proof::parse("m.def(((a: Bool, b: Bool) -> b)(true, false))[]");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -118,7 +118,7 @@ fn unwraping_function_call() {
     space.truths.add(&"m");
     env.truth.add(TruthVal::new(e_id, 0));
     let p = Proof::parse("m.def(f(true, false))[]");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(FALSE_ID)));
 }
 
@@ -143,7 +143,7 @@ fn match_proof() {
             false => m.match(x)[0].def({ true => true, false => false }(false))[]~match(x)[]
         }"
     );
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(x)));
 }
 
@@ -154,7 +154,7 @@ fn id_call() {
     let mut data = predef_data();
     let env = Envs::new(&mut data);
     let p = Proof::parse("ID<Bool>(true)");
-    let re = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new());
+    let re = p.to_id(&space).unwrap().execute(&env);
     assert_eq!(re, Ok(exp_id!(EQ_ID[BOOL_ID](TRUE_ID, TRUE_ID))));
 }
 
@@ -169,7 +169,7 @@ fn block() {
         proof f = def({ true => true, false => false }(false))
         f~t[1]
     }");
-    let p = p.to_id(&space).unwrap().execute(&env, &MatchEnv::new()).unwrap();
+    let p = p.to_id(&space).unwrap().execute(&env).unwrap();
     assert_eq!(p, Exp::parse("eq<Bool>({ true => true, false => false }(false), { true => false, false => true }(true))").to_id(&space).unwrap())
 }
 

@@ -2,7 +2,7 @@ use predef::*;
 use env::{ ID, PushID };
 use envs::{ Envs, TypeVal, ExpVal, TruthVal };
 use variance::Variance;
-use super::{ Type, Pattern, Exp, Proof, MatchEnv, TypeCheck, ErrID };
+use super::{ Type, Pattern, Exp, Proof, TypeCheck, ErrID };
 
 #[derive(Debug)]
 pub enum Element {
@@ -85,11 +85,11 @@ impl Element {
                     
                     if let Some(p) = p {
                         let env = env.scope_exp(p.bound());
-                        let proof = proof.execute(&env, &MatchEnv::new())?;
+                        let proof = proof.execute(&env)?;
                         let t = p.type_check(&env)?;
                         Exp::Call(Box::new(Exp::Var(FORALL_ID.into(), vec![t])), Box::new(Exp::Closure(vec![(p.clone(), proof)])))
                     } else {
-                        proof.execute(&env, &MatchEnv::new())?
+                        proof.execute(&env)?
                     }
                 };
 

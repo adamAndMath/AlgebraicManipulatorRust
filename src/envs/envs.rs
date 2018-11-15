@@ -1,5 +1,6 @@
 use env::Env;
-use super::{ ExpVal, TypeVal, TruthVal };
+use super::{ ExpVal, TypeVal, TruthVal, MatchEnv };
+use id::Exp;
 
 #[derive(Debug)]
 pub struct EnvData {
@@ -13,6 +14,7 @@ pub struct Envs<'a> {
     pub ty: Env<'a, TypeVal>,
     pub exp: Env<'a, ExpVal>,
     pub truth: Env<'a, TruthVal>,
+    pub mtch: MatchEnv<'a>,
 }
 
 impl<'a> Envs<'a> {
@@ -21,6 +23,7 @@ impl<'a> Envs<'a> {
             exp: Env::new(&mut data.exps),
             ty: Env::new(&mut data.types),
             truth: Env::new(&mut data.truths),
+            mtch: MatchEnv::new(),
         }
     }
 
@@ -29,6 +32,7 @@ impl<'a> Envs<'a> {
             ty: self.ty.scope(vec![]),
             exp: self.exp.scope(vec![]),
             truth: self.truth.scope(vec![]),
+            mtch: self.mtch.scope(vec![]),
         }
     }
 
@@ -37,6 +41,7 @@ impl<'a> Envs<'a> {
             ty: self.ty.scope(v),
             exp: self.exp.scope(vec![]),
             truth: self.truth.scope(vec![]),
+            mtch: self.mtch.scope(vec![]),
         }
     }
     
@@ -45,6 +50,7 @@ impl<'a> Envs<'a> {
             ty: self.ty.scope(vec![]),
             exp: self.exp.scope(v),
             truth: self.truth.scope(vec![]),
+            mtch: self.mtch.scope(vec![]),
         }
     }
 
@@ -53,6 +59,16 @@ impl<'a> Envs<'a> {
             ty: self.ty.scope(vec![]),
             exp: self.exp.scope(vec![]),
             truth: self.truth.scope(v),
+            mtch: self.mtch.scope(vec![]),
+        }
+    }
+
+    pub fn scope_match<'b>(&'b self, exp: Vec<ExpVal>, v: Vec<(Exp, Exp)>) -> Envs<'b> where 'a: 'b {
+        Envs {
+            ty: self.ty.scope(vec![]),
+            exp: self.exp.scope(exp),
+            truth: self.truth.scope(vec![]),
+            mtch: self.mtch.scope(v),
         }
     }
 

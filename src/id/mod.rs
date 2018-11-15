@@ -26,7 +26,6 @@ pub mod renamed {
         Proof as ProofID,
         Element as ElementID,
         Direction,
-        MatchEnv,
         RefType,
         ErrID,
         TypeCheck,
