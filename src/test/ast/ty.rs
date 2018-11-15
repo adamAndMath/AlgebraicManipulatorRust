@@ -13,8 +13,6 @@ fn to_id() {
     let b_id = space.types.add(&"B");
     let c_id = space.types.add(&"C");
 
-    let space = &space.local();
-
     assert_eq!(Type::parse("A").to_id(&space), Ok(type_id!(a_id)));
     assert_eq!(Type::parse("B").to_id(&space), Ok(type_id!(b_id)));
     assert_eq!(Type::parse("C").to_id(&space), Ok(type_id!(c_id)));

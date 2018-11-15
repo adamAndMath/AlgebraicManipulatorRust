@@ -1,9 +1,10 @@
 use predef::*;
-use env::LocalID;
+use env::{ ID, PushID };
 use envs::{ Envs, TypeVal, ExpVal, TruthVal };
 use variance::Variance;
 use super::{ Type, Pattern, Exp, Proof, MatchEnv, TypeCheck, ErrID };
 
+#[derive(Debug)]
 pub enum Element {
     Struct(Vec<Variance>, Option<Type>),
     Enum(Vec<Variance>, Vec<Option<Type>>),
@@ -15,30 +16,9 @@ pub enum Element {
 impl Element {
     pub fn define(&self, env: &mut Envs) -> Result<(), ErrID> {
         match self {
-            /*Element::Module(n, es) =>
-                env.child_scope::<ErrAst,_>(n.clone(), |env| {
-                    for e in es { e.define(env)? }
-                    Ok(())
-                })?,
-            Element::Using(p) => {
-                let mut err = true;
-                if let Ok(exp) = env.exp.get_val(p).map(|v|v.clone()) {
-                    env.exp.alias(p.name(), exp);
-                    err = false;
-                }
-                if let Ok(ty) = env.ty.get_val(p).map(|v|v.clone()) {
-                    env.ty.alias(p.name(), ty);
-                    err = false;
-                }
-                if let Ok(truth) = env.truth.get_val(p).map(|v|v.clone()) {
-                    env.truth.alias(p.name(), truth);
-                    err = false;
-                }
-                if err { return Err(ErrAst::UndefinedPath(p.clone())); }
-            },*/
             Element::Struct(gs, p) => {
                 let ty_id = env.ty.add(TypeVal::new(gs.clone()));
-                let ty = Type::Gen(ty_id.into(), (0..gs.len()).map(|i|Type::Gen(LocalID::new(i), vec![])).collect());
+                let ty = Type::Gen(ty_id.push_id(1), (0..gs.len()).map(|i|Type::Gen(ID::new(i), vec![])).collect());
                 if let Some(p) = p {
                     let f_id = env.exp.add(ExpVal::new_empty(func(p.clone(), ty), gs.len()));
                     env.ty[ty_id].push_comp(f_id);
@@ -49,7 +29,7 @@ impl Element {
             },
             Element::Enum(gs, vs) => {
                 let ty_id = env.ty.add(TypeVal::new(gs.clone()));
-                let ty = Type::Gen(ty_id.into(), (0..gs.len()).map(|i|Type::Gen(LocalID::new(i), vec![])).collect());
+                let ty = Type::Gen(ty_id.push_id(1), (0..gs.len()).map(|i|Type::Gen(ID::new(i), vec![])).collect());
                 let ty_ref = &mut env.ty[ty_id];
                 for p in vs {
                     if let Some(p) = p {
@@ -60,7 +40,7 @@ impl Element {
                 }
             },
             Element::Let(gs, an, e) => {
-                let e_ty = e.type_check(&env.local().scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect()))?;
+                let e_ty = e.type_check(&env.scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect()))?;
                 if let Some(t) = an {
                     if e_ty != *t {
                         return Err(ErrID::TypeMismatch(e_ty, t.clone()));
@@ -70,28 +50,26 @@ impl Element {
             },
             Element::Func(gs, None, ps) => {
                 let e = Exp::Closure(ps.clone());
-                let t = e.type_check(&env.local().scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect()))?;
+                let t = e.type_check(&env.scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect()))?;
                 env.exp.add(ExpVal::new(e, t, *gs));
             },
             Element::Func(gs, Some(re), ps) => {
                 let gs: Vec<_> = (0..*gs).map(|_|TypeVal::new(vec![])).collect();
                 let t = {
-                    let env = &env.local();
                     let env = &env.scope_ty(gs.clone());
                     let mut t_in = None;
                     for (p,_) in ps {
-                        let t = p.type_check(env)?;
+                        let t = p.type_check(&env.scope_empty())?;
                         if let Some(ref t_in) = t_in {
                             if t != *t_in { return Err(ErrID::TypeMismatch(t, t_in.clone())); }
                         } else {
                             t_in = Some(t)
                         }
                     }
-                    func(t_in.unwrap(), re.clone())
+                    func(t_in.unwrap().pop_id(1).unwrap(), re.clone())
                 };
                 let id = env.exp.add(ExpVal::new_empty(t.clone(), gs.len()));
                 let f = {
-                    let env = env.local();
                     let env = env.scope_ty(gs);
                     let e = Exp::Closure(ps.clone());
                     let e_ty = e.type_check(&env)?;
@@ -103,7 +81,6 @@ impl Element {
             },
             Element::Proof(gs, p, proof) => {
                 let proof = {
-                    let env = env.local();
                     let env = env.scope_ty((0..*gs).map(|_|TypeVal::new(vec![])).collect());
                     
                     if let Some(p) = p {

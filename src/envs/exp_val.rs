@@ -1,4 +1,4 @@
-use env::LocalID;
+use env::ID;
 use id::{ Type, Exp, ErrID, SetLocal };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,11 +25,11 @@ impl ExpVal {
         self.val = Some(e);
     }
 
-    pub fn val(&self, id: LocalID<ExpVal>, gen: &[Type]) -> Result<Exp, ErrID> {
-        self.val.as_ref().map(|e|e.set(gen)).ok_or(ErrID::VarNotSet(id))
+    pub fn val(&self, id: ID<Self>, gen: &[Type]) -> Result<Exp, ErrID> {
+        self.val.as_ref().map(|e|id.move_into(e).set(gen)).ok_or(ErrID::VarNotSet(id))
     }
 
-    pub fn ty(&self, gen: &[Type]) -> Type {
-        self.ty.set(gen)
+    pub fn ty(&self, id: ID<Self>, gen: &[Type]) -> Type {
+        id.move_into(&self.ty).set(gen)
     }
 }

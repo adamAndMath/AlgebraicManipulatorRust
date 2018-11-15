@@ -1,5 +1,5 @@
 use id::ErrID;
-use env::{ LocalID, Path };
+use env::{ ID, Path };
 use envs::{ ExpVal, TypeVal, TruthVal };
 use parser::Error;
 use pest::error::ErrorVariant;
@@ -26,9 +26,9 @@ macro_rules! impl_from {
 }
 
 impl_from! {
-    LocalID<ExpVal>,
-    LocalID<TypeVal>,
-    LocalID<TruthVal>,
+    ID<ExpVal>,
+    ID<TypeVal>,
+    ID<TruthVal>,
     Tree
 }
 

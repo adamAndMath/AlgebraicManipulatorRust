@@ -1,5 +1,5 @@
-use env::{ Namespace, Space, LocalNamespace, ID, Path };
-use super::{ TypeVal, ExpVal, TruthVal, LocalNamespaces };
+use env::{ Namespace, Space, ID, Path };
+use super::{ TypeVal, ExpVal, TruthVal };
 use ast::ErrAst;
 
 #[derive(Debug)]
@@ -36,14 +36,6 @@ impl<'a> Namespaces<'a> {
         }
     }
 
-    pub fn local<'b>(&'b self) -> LocalNamespaces<'b> where 'a: 'b {
-        LocalNamespaces {
-            types: LocalNamespace::new(&self.types),
-            exps: LocalNamespace::new(&self.exps),
-            truths: LocalNamespace::new(&self.truths),
-        }
-    }
-
     pub fn sub_space<'b, S: AsRef<str>>(&'b mut self, n: &S) -> Namespaces<'b> where 'a: 'b {
         Namespaces {
             types: self.types.sub_space(n),
@@ -77,5 +69,37 @@ impl<'a> Namespaces<'a> {
 
     pub fn get_truth<S: Clone + AsRef<str>>(&self, p: &Path<S>) -> Result<ID<TruthVal>, ErrAst<S>> {
         self.truths.get(p).map_err(|e| if e.len() < p.len() { ErrAst::UndefinedPath(e) } else { ErrAst::UnknownTruth(e) })
+    }
+
+    pub fn scope_empty<'b>(&'b self, names: &'a mut NameData) -> Namespaces<'b> where 'a: 'b {
+        Namespaces {
+            exps: self.exps.scope_empty(&mut names.exps),
+            types: self.types.scope_empty(&mut names.types),
+            truths: self.truths.scope_empty(&mut names.truths),
+        }
+    }
+
+    pub fn scope_type<'b, I: IntoIterator>(&'b self, names: &'a mut NameData, v: I) -> Namespaces<'b> where 'a: 'b, I::Item: AsRef<str> {
+        Namespaces {
+            exps: self.exps.scope_empty(&mut names.exps),
+            types: self.types.scope(&mut names.types, v),
+            truths: self.truths.scope_empty(&mut names.truths),
+        }
+    }
+
+    pub fn scope_exp<'b, I: IntoIterator>(&'b self, names: &'a mut NameData, v: I) -> Namespaces<'b> where 'a: 'b, I::Item: AsRef<str> {
+        Namespaces {
+            exps: self.exps.scope(&mut names.exps, v),
+            types: self.types.scope_empty(&mut names.types),
+            truths: self.truths.scope_empty(&mut names.truths),
+        }
+    }
+    
+    pub fn scope_truth<'b, I: IntoIterator>(&'b self, names: &'a mut NameData, v: I) -> Namespaces<'b> where 'a: 'b, I::Item: AsRef<str> {
+        Namespaces {
+            exps: self.exps.scope_empty(&mut names.exps),
+            types: self.types.scope_empty(&mut names.types),
+            truths: self.truths.scope(&mut names.truths, v),
+        }
     }
 }

@@ -1,27 +1,58 @@
-use env::{ Env, LocalEnv };
-use super::{ LocalEnvs, ExpVal, TypeVal, TruthVal };
+use env::Env;
+use super::{ ExpVal, TypeVal, TruthVal };
 
 #[derive(Debug)]
-pub struct Envs {
-    pub ty: Env<TypeVal>,
-    pub exp: Env<ExpVal>,
-    pub truth: Env<TruthVal>,
+pub struct EnvData {
+    pub types: Vec<TypeVal>,
+    pub exps: Vec<ExpVal>,
+    pub truths: Vec<TruthVal>,
 }
 
-impl Envs {
-    pub fn new(types: Vec<TypeVal>, exps: Vec<ExpVal>, truths: Vec<TruthVal>) -> Self {
+#[derive(Debug)]
+pub struct Envs<'a> {
+    pub ty: Env<'a, TypeVal>,
+    pub exp: Env<'a, ExpVal>,
+    pub truth: Env<'a, TruthVal>,
+}
+
+impl<'a> Envs<'a> {
+    pub fn new(data: &'a mut EnvData) -> Self {
         Envs {
-            exp: Env::new(exps),
-            ty: Env::new(types),
-            truth: Env::new(truths),
+            exp: Env::new(&mut data.exps),
+            ty: Env::new(&mut data.types),
+            truth: Env::new(&mut data.truths),
         }
     }
 
-    pub fn local<'b>(&'b self) -> LocalEnvs<'b> {
-        LocalEnvs {
-            exp: LocalEnv::new(&self.exp),
-            ty: LocalEnv::new(&self.ty),
-            truth: LocalEnv::new(&self.truth),
+    pub fn scope_empty<'b>(&'b self) -> Envs<'b> where 'a: 'b {
+        Envs {
+            ty: self.ty.scope(vec![]),
+            exp: self.exp.scope(vec![]),
+            truth: self.truth.scope(vec![]),
+        }
+    }
+
+    pub fn scope_ty<'b>(&'b self, v: Vec<TypeVal>) -> Envs<'b> where 'a: 'b {
+        Envs {
+            ty: self.ty.scope(v),
+            exp: self.exp.scope(vec![]),
+            truth: self.truth.scope(vec![]),
+        }
+    }
+    
+    pub fn scope_exp<'b>(&'b self, v: Vec<ExpVal>) -> Envs<'b> where 'a: 'b {
+        Envs {
+            ty: self.ty.scope(vec![]),
+            exp: self.exp.scope(v),
+            truth: self.truth.scope(vec![]),
+        }
+    }
+
+    pub fn scope_truth<'b>(&'b self, v: Vec<TruthVal>) -> Envs<'b> where 'a: 'b {
+        Envs {
+            ty: self.ty.scope(vec![]),
+            exp: self.exp.scope(vec![]),
+            truth: self.truth.scope(v),
         }
     }
 

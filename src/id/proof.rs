@@ -1,7 +1,6 @@
-use std::marker::PhantomData;
 use predef::*;
-use env::{ LocalID, PushLocal };
-use envs::{ LocalEnvs, ExpVal, TruthVal };
+use env::{ ID, PushID };
+use envs::{ Envs, TruthVal };
 use super::{ Type, Pattern, Exp, ErrID, SetLocal, TypeCheck };
 use tree::Tree;
 
@@ -28,14 +27,14 @@ impl<'a> MatchEnv<'a> {
     pub fn get(&self, k: &Exp) -> Option<Exp> {
         match self {
             MatchEnv::Base() => None,
-            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||b.get(k)),
+            MatchEnv::Extended(b, v) => v.into_iter().filter(|(i,_)|i==k).map(|(_,v)|v.clone()).next().or_else(||k.pop_id(1).and_then(|k|b.get(&k))),
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RefType {
-    Ref(LocalID<TruthVal>),
+    Ref(ID<TruthVal>),
     Def,
     Match,
 }
@@ -52,9 +51,9 @@ impl TruthRef {
         TruthRef { id, gen, par }
     }
 
-    pub fn get(&self, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+    pub fn get(&self, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         match self.id {
-            RefType::Ref(id) => env.truth[id].get(self.gen.clone(), self.par.clone(), env),
+            RefType::Ref(id) => env.truth[id].get(id, self.gen.clone(), self.par.clone(), env),
             RefType::Def => {
                 let par = self.par.as_ref().ok_or(ErrID::ArgumentAmount(self.id, 1))?;
                 let res = match par {
@@ -86,7 +85,7 @@ impl TruthRef {
         }
     }
 
-    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+    pub fn apply(&self, dir: Direction, path: &Tree, exp: Exp, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         let truth = self.get(env, match_env)?;
         if let Exp::Call(box Exp::Var(eq, t), box Exp::Tuple(v)) = truth {
             if eq != EQ_ID { return Err(ErrID::ExpMismatch(Exp::Var(eq, vec![]), Exp::Var(EQ_ID.into(), vec![])))}
@@ -97,14 +96,14 @@ impl TruthRef {
                 };
 
                 exp.apply(path, 0, &|e, i| {
-                    let par = par.push_local(PhantomData::<ExpVal>, i);
+                    let par = par.push_id(i);
                     if *e == par {
-                        Ok(res.push_local(PhantomData::<ExpVal>, i))
+                        Ok(res.push_id(i))
                     } else {
                         Err(ErrID::ExpMismatch(e.clone(), par))
                     }
                 }).map_err(|e|match e {Ok(e) => e, Err(e) => e.into()})
-            } else {Err(ErrID::NoMatch(Exp::Call(Box::new(Exp::Var(LocalID::Global(EQ_ID), t)), Box::new(Exp::Tuple(v.clone())))))}
+            } else {Err(ErrID::NoMatch(Exp::Call(Box::new(Exp::Var(EQ_ID, t)), Box::new(Exp::Tuple(v.clone())))))}
         } else {Err(ErrID::NoMatch(truth))}
     }
 }
@@ -117,7 +116,7 @@ pub enum Proof {
 }
 
 impl Proof {
-    pub fn execute(&self, env: &LocalEnvs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
+    pub fn execute(&self, env: &Envs, match_env: &MatchEnv) -> Result<Exp, ErrID> {
         Ok(match self {
             Proof::Sequence(initial, rest) => {
                 let mut proof = initial.get(env, match_env)?;
@@ -128,12 +127,12 @@ impl Proof {
             },
             Proof::Block(def, proof) => {
                 let def = def.execute(env, match_env)?;
-                proof.execute(&env.scope_truth(vec![TruthVal::new(def, 0)]), match_env)?
+                proof.execute(&env.scope_truth(vec![TruthVal::new(def, 0)]), &match_env.scope(vec![]))?.pop_id(1).ok_or(ErrID::NotContained)?
             }
             Proof::Match(e, v) => {
                 let mut re: Option<Exp> = None;
                 for (pattern, proof) in v {
-                    let p = proof.execute(env, &match_env.scope(expand(0, &e.push_local(PhantomData::<ExpVal>, pattern.bounds()), pattern)?))?;
+                    let p = proof.execute(&env.scope_exp(pattern.bound()), &match_env.scope(expand(0, &e.push_id(1), pattern)?))?.pop_id(1).ok_or(ErrID::NotContained)?;
                     if let Some(re) = &re {
                         if *re != p {
                             return Err(ErrID::ExpMismatch(p, re.clone()));

@@ -1,6 +1,6 @@
 macro_rules! exp_id {
-    ($x:ident) => (ExpID::Var($x.into(), vec![]));
-    ($x:ident[$($g:tt)*]) => (ExpID::Var($x.into(), type_id_vec!($($g)*)));
+    ($x:ident) => (ExpID::Var($x, vec![]));
+    ($x:ident[$($g:tt)*]) => (ExpID::Var($x, type_id_vec!($($g)*)));
     ($x:ident$([$($g:tt)*])*($($p:tt)*)) => (ExpID::Call(Box::new(exp_id!($x$([$($g)*])*)), Box::new(exp_id_tuple!($($p)*))));
     (($($p:tt)*)) => (exp_id_tuple!($($p)*));
 }

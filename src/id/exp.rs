@@ -1,21 +1,20 @@
-use std::marker::PhantomData;
-use env::{ LocalID, PushLocal };
+use env::{ ID, PushID };
 use super::{ Type, Pattern, ErrID, TypeCheck, TypeCheckIter, SetLocal };
-use envs::{ ExpVal, TypeVal, LocalEnvs };
+use envs::{ ExpVal, Envs };
 use tree::{Tree, TreeChar };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Exp {
-    Var(LocalID<ExpVal>, Vec<Type>),
+    Var(ID<ExpVal>, Vec<Type>),
     Tuple(Vec<Exp>),
     Closure(Vec<(Pattern, Exp)>),
     Call(Box<Exp>, Box<Exp>),
 }
 
 impl TypeCheck for Exp {
-    fn type_check(&self, env: &LocalEnvs) -> Result<Type, ErrID> {
+    fn type_check(&self, env: &Envs) -> Result<Type, ErrID> {
         Ok(match self {
-            Exp::Var(x, gs) => env.exp[*x].ty(gs),
+            Exp::Var(x, gs) => env.exp[*x].ty(*x, gs),
             Exp::Tuple(v) => Type::Tuple(v.type_check(env)?),
             Exp::Closure(v) => {
                 let mut re: Option<Type> = None;
@@ -33,41 +32,35 @@ impl TypeCheck for Exp {
     }
 }
 
-impl PushLocal<ExpVal> for Exp {
-    fn push_local_with_min(&self, p: PhantomData<ExpVal>, min: usize, amount: usize) -> Self {
+impl PushID for Exp {
+    fn push_id_with_min(&self, min: usize, amount: usize) -> Self {
         match self {
-            Exp::Var(id, ty) => Exp::Var(id.push_local_with_min(p, min, amount), ty.clone()),
-            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(p, min, amount)),
-            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(p, min, amount)),
-            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(p, min, amount), e.push_local_with_min(p, min, amount)),
+            Exp::Var(id, ty) => Exp::Var(id.push_id_with_min(min, amount), ty.push_id_with_min(min, amount)),
+            Exp::Tuple(v) => Exp::Tuple(v.push_id_with_min(min, amount)),
+            Exp::Closure(v) => Exp::Closure(v.push_id_with_min(min, amount)),
+            Exp::Call(f, e) => Exp::Call(f.push_id_with_min(min, amount), e.push_id_with_min(min, amount)),
         }
     }
-}
 
-impl PushLocal<TypeVal> for Exp {
-    fn push_local_with_min(&self, p: PhantomData<TypeVal>, min: usize, amount: usize) -> Self {
-        match self {
-            Exp::Var(id, ty) => Exp::Var(*id, ty.push_local_with_min(p, min, amount)),
-            Exp::Tuple(v) => Exp::Tuple(v.push_local_with_min(p, min, amount)),
-            Exp::Closure(v) => Exp::Closure(v.push_local_with_min(p, min, amount)),
-            Exp::Call(f, e) => Exp::Call(f.push_local_with_min(p, min, amount), e.push_local_with_min(p, min, amount)),
-        }
+    fn pop_id_with_min(&self, min: usize, amount: usize) -> Option<Self> {
+        Some(match self {
+            Exp::Var(id, ty) => Exp::Var(id.pop_id_with_min(min, amount)?, ty.pop_id_with_min(min, amount)?),
+            Exp::Tuple(v) => Exp::Tuple(v.pop_id_with_min(min, amount)?),
+            Exp::Closure(v) => Exp::Closure(v.pop_id_with_min(min, amount)?),
+            Exp::Call(f, e) => Exp::Call(f.pop_id_with_min(min, amount)?, e.pop_id_with_min(min, amount)?),
+        })
     }
 }
 
 impl SetLocal for Exp {
     fn set_with_min(&self, min: usize, par: &[Self]) -> Self {
         match self {
-            Exp::Var(LocalID::Local(id, _), ty) => {
-                if *id < min {
-                    Exp::Var(LocalID::new(*id), ty.clone())
-                } else if id - min >= par.len() {
-                    Exp::Var(LocalID::new(id - par.len()), ty.clone())
-                } else {
-                    par[id - min].push_local(PhantomData::<ExpVal>, min)
+            Exp::Var(id, ty) => {
+                match id.set(min) {
+                    Ok(id) => par[id].push_id(min),
+                    Err(id) => Exp::Var(id, ty.pop_id_with_min(min, 1).unwrap()),
                 }
-            },
-            Exp::Var(id, ty) => Exp::Var(*id, ty.clone()),
+            }
             Exp::Tuple(v) => Exp::Tuple(v.set_with_min(min, par)),
             Exp::Closure(v) => Exp::Closure(v.set_with_min(min, par)),
             Exp::Call(f, e) => Exp::Call(f.set_with_min(min, par), e.set_with_min(min, par)),
@@ -78,7 +71,7 @@ impl SetLocal for Exp {
 impl SetLocal<Type> for Exp {
     fn set_with_min(&self, min: usize, par: &[Type]) -> Self {
         match self {
-            Exp::Var(id, ty) => Exp::Var(*id, ty.set_with_min(min, par)),
+            Exp::Var(id, ty) => Exp::Var(id.pop_id_with_min(min, 1).unwrap(), ty.set_with_min(min, par)),
             Exp::Tuple(v) => Exp::Tuple(v.set_with_min(min, par)),
             Exp::Closure(v) => Exp::Closure(v.set_with_min(min, par)),
             Exp::Call(f, e) => Exp::Call(f.set_with_min(min, par), e.set_with_min(min, par)),
@@ -108,7 +101,7 @@ impl Exp {
 
                     Exp::Closure(v.into_iter().enumerate().map(|(i, (p, e))|
                         match path.get(i) {
-                            Some(path) => e.apply(path, push, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
+                            Some(path) => e.apply(path, push+1, f).map(|e|(p.clone(), e)).map_err(|e|e.map_err(|t|Tree::edge(i)+t)),
                             None => Ok((p.clone(), e.clone())),
                         }
                     ).collect::<Result<_,_>>()?)
@@ -116,7 +109,7 @@ impl Exp {
                 Exp::Call(e1, box e2) => {
                     Exp::Call(
                         match path.get(TreeChar::Func) {
-                            Some(p) => Box::new(e1.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?),
+                            Some(p) => Box::new(e1.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(TreeChar::Func)+t))?),
                             None => e1.clone(),
                         },
                         Box::new(
@@ -135,14 +128,14 @@ impl Exp {
                                     e => {
                                         path.is_within(0..1, &[TreeChar::Func]).map_err(|t|Err(outside*t))?;
                                         match path.get(0) {
-                                            Some(p) => e.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?,
+                                            Some(p) => e.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(0)+t))?,
                                             None => e.clone(),
                                         }
                                     }
                                 }
                             } else {
                                 match path.get(TreeChar::Tuple) {
-                                    Some(p) => e2.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(push)+t))?,
+                                    Some(p) => e2.apply(p, push, f).map_err(|e|e.map_err(|t|Tree::edge(TreeChar::Tuple)+t))?,
                                     None => (e2).clone(),
                                 }
                             }

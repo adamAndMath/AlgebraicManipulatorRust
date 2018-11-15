@@ -1,21 +1,22 @@
-use env::LocalID;
+use env::ID;
 use envs::{ ExpVal, TypeVal, TruthVal };
 use super::{ Type, Exp, RefType };
 use tree::Tree;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ErrID {
-    UnknownExpID(LocalID<ExpVal>),
-    UnknownTypeID(LocalID<TypeVal>),
-    UnknownTruthID(LocalID<TruthVal>),
+    UnknownExpID(ID<ExpVal>),
+    UnknownTypeID(ID<TypeVal>),
+    UnknownTruthID(ID<TruthVal>),
     ExpMismatch(Exp, Exp),
     TypeMismatch(Type, Type),
     GenericAmount(usize, usize),
-    NotAtomic(LocalID<ExpVal>, Type),
+    NotAtomic(ID<ExpVal>, Type),
     IlegalPath(Tree),
     ArgumentAmount(RefType, usize),
-    VarNotSet(LocalID<ExpVal>),
+    VarNotSet(ID<ExpVal>),
     NoMatch(Exp),
+    NotContained,
 }
 
 macro_rules! impl_from {
@@ -29,8 +30,8 @@ macro_rules! impl_from {
 }
 
 impl_from!{
-    LocalID<ExpVal> = UnknownExpID,
-    LocalID<TypeVal> = UnknownTypeID,
-    LocalID<TruthVal> = UnknownTruthID,
+    ID<ExpVal> = UnknownExpID,
+    ID<TypeVal> = UnknownTypeID,
+    ID<TruthVal> = UnknownTruthID,
     Tree = IlegalPath
 }

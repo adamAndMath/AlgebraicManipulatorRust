@@ -1,5 +1,5 @@
 use env::Path;
-use envs::LocalNamespaces;
+use envs::Namespaces;
 use id::renamed::{ ExpID };
 use super::{ Type, Pattern, ErrAst, ToID };
 
@@ -13,7 +13,7 @@ pub enum Exp<T> {
 
 impl<T: Clone + AsRef<str>> ToID<T> for Exp<T> {
     type To = ExpID;
-    fn to_id(&self, env: &LocalNamespaces) -> Result<ExpID, ErrAst<T>> {
+    fn to_id(&self, env: &Namespaces) -> Result<ExpID, ErrAst<T>> {
         Ok(match self {
             Exp::Var(x, gs) => ExpID::Var(env.get_exp(x)?, gs.to_id(env)?),
             Exp::Tuple(v) => ExpID::Tuple(v.to_id(env)?),

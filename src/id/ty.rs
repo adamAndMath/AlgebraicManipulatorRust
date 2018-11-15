@@ -1,44 +1,49 @@
-use std::marker::PhantomData;
 use predef::*;
 use envs::TypeVal;
 use variance::Variance;
-use env::{ LocalID, PushLocal };
+use env::{ ID, PushID };
 use super::{ ErrID, SetLocal };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    Gen(LocalID<TypeVal>, Vec<Type>),
+    Gen(ID<TypeVal>, Vec<Type>),
     Tuple(Vec<Type>),
 }
 
-impl PushLocal<TypeVal> for (Variance, Type) {
-    fn push_local_with_min(&self, p: PhantomData<TypeVal>, min: usize, amount: usize) -> Self {
-        (self.0, self.1.push_local_with_min(p, min, amount))
+impl PushID for (Variance, Type) {
+    fn push_id_with_min(&self, min: usize, amount: usize) -> Self {
+        (self.0, self.1.push_id_with_min(min, amount))
+    }
+
+    fn pop_id_with_min(&self, min: usize, amount: usize) -> Option<Self> {
+        Some((self.0, self.1.pop_id_with_min(min, amount)?))
     }
 }
 
-impl PushLocal<TypeVal> for Type {
-    fn push_local_with_min(&self, p: PhantomData<TypeVal>, min: usize, amount: usize) -> Self {
+impl PushID for Type {
+    fn push_id_with_min(&self, min: usize, amount: usize) -> Self {
         match self {
-            Type::Gen(id, v) => Type::Gen(id.push_local_with_min(p, min, amount), v.push_local_with_min(p, min, amount)),
-            Type::Tuple(v) => Type::Tuple(v.push_local_with_min(p, min, amount)),
+            Type::Gen(id, v) => Type::Gen(id.push_id_with_min(min, amount), v.push_id_with_min(min, amount)),
+            Type::Tuple(v) => Type::Tuple(v.push_id_with_min(min, amount)),
         }
+    }
+
+    fn pop_id_with_min(&self, min: usize, amount: usize) -> Option<Self> {
+        Some(match self {
+            Type::Gen(id, v) => Type::Gen(id.pop_id_with_min(min, amount)?, v.pop_id_with_min(min, amount)?),
+            Type::Tuple(v) => Type::Tuple(v.pop_id_with_min(min, amount)?),
+        })
     }
 }
 
 impl SetLocal for Type {
     fn set_with_min(&self, min: usize, par: &[Self]) -> Self {
         match self {
-            Type::Gen(LocalID::Local(id, _), v) => {
-                if *id < min {
-                    Type::Gen(LocalID::new(*id), v.set_with_min(min, par))
-                } else if id - min >= par.len() {
-                    Type::Gen(LocalID::new(id - par.len()), v.set_with_min(min, par))
-                } else {
-                    par[id - min].push_local(PhantomData::<TypeVal>, min)
-                }
-            },
-            Type::Gen(id, v) => Type::Gen(*id, v.set_with_min(min, par)),
+            Type::Gen(id, v) =>
+                match id.set(min) {
+                    Ok(id) => par[id].push_id(min),
+                    Err(id) => Type::Gen(id, v.set_with_min(min, par))
+                },
             Type::Tuple(v) => Type::Tuple(v.set_with_min(min, par)),
         }
     }

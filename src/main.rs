@@ -28,7 +28,7 @@ fn main() {
 
 use parser::{ parse_file, Error };
 use std::fs::read_to_string;
-use envs::NameData;
+use envs::{ NameData, Envs };
 use ast::ErrAst;
 
 fn run() -> Result<(), Error> {
@@ -40,7 +40,8 @@ fn run() -> Result<(), Error> {
 
     let mut names = NameData::new();
     let mut space = predef_space(&mut names);
-    let mut env = predef();
+    let mut data = predef_data();
+    let mut env = Envs::new(&mut data);
     let file = read_file(&path);
     parse_file(&file)?.into_iter().flat_map(|e|e.to_id(&path, &mut space)).collect::<Result<Vec<_>,_>>()?.into_iter().map(|e|e.define(&mut env)).collect::<Result<(),_>>().map_err(|e|ErrAst::from(e).into())
 }

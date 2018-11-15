@@ -1,77 +1,110 @@
-use std::collections::HashMap;
-use super::{ ID, Path };
-
-#[derive(Debug)]
-pub enum SpaceVal<T> {
-    Val(ID<T>),
-    Space(Space<T>),
-}
-
-#[derive(Debug)]
-pub struct Space<T> {
-    names: HashMap<String, SpaceVal<T>>,
-}
-
-#[derive(Debug)]
-struct SpaceRef<'a, T: 'a> {
-    space: &'a mut Space<T>,
-    local: &'a mut Space<T>,
-    base: Option<&'a SpaceRef<'a, T>>,
-}
+use super::{ ID, Path, Space, SpaceVal, PushID };
 
 #[derive(Debug)]
 pub struct Namespace<'a, T: 'a> {
     space: Space<T>,
     local: Space<T>,
-    base: Option<SpaceRef<'a, T>>,
+    parent: ParentSpace<'a, T>,
     paths: &'a mut Vec<Path<String>>,
     path: Path<String>,
 }
 
-impl<T> Clone for SpaceVal<T> {
-    fn clone(&self) -> Self {
-        match self {
-            SpaceVal::Val(id) => SpaceVal::Val(*id),
-            SpaceVal::Space(space) => SpaceVal::Space(space.clone()),
-        }
+#[derive(Debug)]
+pub enum ParentSpace<'a, T: 'a> {
+    Base,
+    Subspace {
+        space: &'a mut Space<T>,
+        local: &'a mut Space<T>,
+        parent: &'a ParentSpace<'a, T>,
+    },
+    Scope {
+        space: &'a Space<T>,
+        local: &'a Space<T>,
+        parent: &'a ParentSpace<'a, T>,
     }
 }
 
-impl<T> Clone for Space<T> {
-    fn clone(&self) -> Self {
-        Space { names: self.names.clone() }
-    }
-}
+impl<'a, T: 'a> ParentSpace<'a, T> {
+    fn get_val<S: Clone + AsRef<str>>(&self, path: &[S]) -> Result<(&SpaceVal<T>, usize), Path<S>> {
+        if path[0].as_ref() == "super" {
+            let mut i = 0;
+            let mut s = self;
 
-impl<T> Default for Space<T> {
-    fn default() -> Self {
-        Space { names: HashMap::new() }
-    }
-}
-
-impl<T> Space<T> {
-    pub fn new<S: AsRef<str>, I: IntoIterator<Item = (S, ID<T>)>>(predef: I) -> Self {
-        Space {
-            names: predef.into_iter().map(|(n, id)|(n.as_ref().to_owned(), SpaceVal::Val(id))).collect(),
-        }
-    }
-
-    pub fn add<S: AsRef<str>>(&mut self, n: &S, val: SpaceVal<T>) {
-        self.names.insert(n.as_ref().to_owned(), val);
-    }
-
-    pub fn get<S: Clone + AsRef<str>>(&self, p: &[S]) -> Result<&SpaceVal<T>, Path<S>> {
-        let s = &p[0];
-        let p = &p[1..];
-        let v = self.names.get(s.as_ref());
-        if p.is_empty() {
-            v.ok_or_else(||s.to_owned().into())
-        } else {
-            if let Some(SpaceVal::Space(space)) = v {
-                space.get(p).map_err(|p|p.prepend(s.clone()))
-            } else {
-                Err(s.to_owned().into())
+            while path[i].as_ref() == "super" {
+                i += 1;
+                s = self.parent_space().ok_or_else(||Path::new(path[..i].to_owned()))?;
             }
+
+            s.space().ok_or_else(||Path::new(path[..i].to_owned()))?.get(&path[i..]).map(|v|(v,0)).map_err(|p|path[..i].iter().fold(p, |p,s|p.prepend(s.clone())))
+        } else {
+            match self.local().ok_or_else::<Path<_>,_>(||path[0].to_owned().into())?.get(path) {
+                Ok(v) => Ok((v,0)),
+                Err(p) =>
+                    if p.len() == 1 {
+                        self.parent_scope().ok_or(p)?.get_val(path).map(|(v,i)|(v,i+1))
+                    } else {
+                        Err(p)
+                    }
+            }
+        }
+    }
+
+    fn parent_space(&self) -> Option<&Self> {
+        match self {
+            ParentSpace::Subspace {
+                space: _,
+                local: _,
+                parent,
+            } => Some(parent),
+            _ => None,
+        }
+    }
+
+    fn parent_scope(&self) -> Option<&Self> {
+        match self {
+            ParentSpace::Base => None,
+            ParentSpace::Subspace {
+                space: _,
+                local: _,
+                parent,
+            } => parent.parent_scope(),
+            ParentSpace::Scope {
+                space: _,
+                local: _,
+                parent,
+            } => Some(parent),
+        }
+    }
+
+    fn space(&self) -> Option<&Space<T>> {
+        match self {
+            ParentSpace::Base => None,
+            ParentSpace::Subspace {
+                space,
+                local: _,
+                parent: _,
+            } => Some(space),
+            ParentSpace::Scope {
+                space,
+                local: _,
+                parent: _,
+            } => Some(space),
+        }
+    }
+
+    fn local(&self) -> Option<&Space<T>> {
+        match self {
+            ParentSpace::Base => None,
+            ParentSpace::Subspace {
+                space: _,
+                local,
+                parent: _,
+            } => Some(local),
+            ParentSpace::Scope {
+                space: _,
+                local,
+                parent: _,
+            } => Some(local),
         }
     }
 }
@@ -81,7 +114,7 @@ impl<'a, T: 'a> Namespace<'a, T> {
         Namespace {
             space: space.clone(),
             local: space,
-            base: None,
+            parent: ParentSpace::Base,
             paths,
             path: Path::new(vec![]),
         }
@@ -90,20 +123,52 @@ impl<'a, T: 'a> Namespace<'a, T> {
     pub fn sub_space<'b, S: AsRef<str>>(&'b mut self, n: &S) -> Namespace<'b, T> where 'a: 'b {
         let path = self.path.clone().append(n.as_ref().to_owned());
         Namespace {
-            base: Some(SpaceRef {
+            parent: ParentSpace::Subspace {
                 space: &mut self.space,
                 local: &mut self.local,
-                base: self.base.as_ref()
-            }),
-            space: Space { names: HashMap::new() },
-            local: Space { names: HashMap::new() },
+                parent: &self.parent,
+            },
+            space: Space::default(),
+            local: Space::default(),
             paths: self.paths,
             path,
         }
     }
 
+    pub fn scope<'b, I: IntoIterator>(&'b self, paths: &'a mut Vec<Path<String>>, v: I) -> Namespace<'b, T> where 'a: 'b, I::Item: AsRef<str> {
+        let space = Space::new(v.into_iter().enumerate().map(|(i,s)|(s, ID::<T>::new(i))));
+        Namespace {
+            parent: ParentSpace::Scope {
+                space: &self.space,
+                local: &self.local,
+                parent: &self.parent,
+            },
+            local: space.clone(),
+            space,
+            paths,
+            path: Path::new(vec![]),
+        }
+    }
+
+    pub fn scope_empty<'b>(&'b self, paths: &'a mut Vec<Path<String>>) -> Namespace<'b, T> where 'a: 'b {
+        Namespace {
+            parent: ParentSpace::Scope {
+                space: &self.space,
+                local: &self.local,
+                parent: &self.parent,
+            },
+            space: Space::default(),
+            local: Space::default(),
+            paths,
+            path: self.path.clone(),
+        }
+    }
+
     pub fn alias<S: Clone + AsRef<str>>(&mut self, n: &S, p: &Path<S>) -> Result<(), Path<S>> {
-        let val = self.get_val(p.as_ref())?.clone();
+        let val = {
+            let (val, i) = self.get_val(p.as_ref())?;
+            val.push_id(i)
+        };
         self.local.add(n, val);
         Ok(())
     }
@@ -116,34 +181,42 @@ impl<'a, T: 'a> Namespace<'a, T> {
         id
     }
 
-    fn get_val<S: Clone + AsRef<str>>(&self, path: &[S]) -> Result<&SpaceVal<T>, Path<S>> {
+    fn get_val<S: Clone + AsRef<str>>(&self, path: &[S]) -> Result<(&SpaceVal<T>, usize), Path<S>> {
         if path[0].as_ref() == "super" {
-            let mut i = 1;
-            let mut s = self.base.as_ref().ok_or_else(||Path::new(path[..i].to_owned()))?;
-            while path[i].as_ref() == "super" {
-                i += 1;
-                s = s.base.ok_or_else(||Path::new(path[..i].to_owned()))?;
-            }
-
-            s.space.get(&path[i..])
+            self.parent.get_val(&path[1..]).map(|(v,i)|(v,i+1)).map_err(|p|p.prepend(path[0].to_owned()))
         } else {
-            self.local.get(path)
+            match self.local.get(path) {
+                Ok(v) => Ok((v,0)),
+                Err(p) =>
+                    if p.len() == 1 {
+                        match &self.parent {
+                            ParentSpace::Scope {
+                                local: _,
+                                space: _,
+                                parent: _
+                            } => &self.parent,
+                            _ => self.parent.parent_scope().ok_or(p)?,
+                        }.get_val(path).map(|(v,i)|(v,i+1))
+                    } else {
+                        Err(p)
+                    }
+            }
         }
     }
 
     pub fn get<S: Clone + AsRef<str>>(&self, p: &Path<S>) -> Result<ID<T>, Path<S>> {
         match self.get_val(p.as_ref())? {
-            SpaceVal::Val(id) => Ok(*id),
-            SpaceVal::Space(_) => Err(p.clone())
+            (SpaceVal::Val(id), i) => Ok(id.push_id(i)),
+            (SpaceVal::Space(_), _) => Err(p.clone()),
         }
     }
 }
 
 impl<'a, T: 'a> Drop for Namespace<'a, T> {
     fn drop(&mut self) {
-        if let Some(ref mut base) = self.base {
-            base.space.add(self.path.name(), SpaceVal::Space(self.space.clone()));
-            base.local.add(self.path.name(), SpaceVal::Space(self.space.clone()));
+        if let ParentSpace::Subspace { ref mut space, ref mut local, parent: _ } = self.parent {
+            space.add(self.path.name(), SpaceVal::Space(self.space.clone()));
+            local.add(self.path.name(), SpaceVal::Space(self.space.clone()));
         }
     }
 }

@@ -1,6 +1,6 @@
 macro_rules! type_id {
-    ($t:ident) => (TypeID::Gen($t.into(), vec!()));
-    ($t:ident[$($g:tt)*]) => (TypeID::Gen($t.into(), type_id_vec!($($g)*)));
+    ($t:ident) => (TypeID::Gen($t.clone(), vec!()));
+    ($t:ident[$($g:tt)*]) => (TypeID::Gen($t.clone(), type_id_vec!($($g)*)));
     (($($p:tt)*)) => (type_id_tuple!($($p)*));
 }
 

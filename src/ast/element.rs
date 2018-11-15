@@ -17,7 +17,8 @@ impl<T: Clone + AsRef<str>> Element<T> {
         Ok(match self {
             Element::Struct(n, gs, p) => {
                 let var = gs.into_iter().map(|(v,_)|*v).collect();
-                let p = p.to_id(&env.local().scope_type(gs.into_iter().map(|(_,g)|g.to_owned())))?;
+                let mut names = NameData::new();
+                let p = p.to_id(&env.scope_type(&mut names, gs.into_iter().map(|(_,g)|g.to_owned())))?;
                 env.types.add(n);
                 env.exps.add(n);
                 ElementID::Struct(var, p)
@@ -30,16 +31,16 @@ impl<T: Clone + AsRef<str>> Element<T> {
                 }
                 let var = gs.into_iter().map(|(v,_)|*v).collect();
                 let vs = {
-                    let env = env.local();
-                    let env = &env.scope_type(gs.into_iter().map(|(_,g)|g));
+                    let mut names = NameData::new();
+                    let env = &env.scope_type(&mut names, gs.into_iter().map(|(_,g)|g));
                     vs.into_iter().map(|(_,p)|p.to_id(env)).collect::<Result<_,_>>()?
                 };
                 ElementID::Enum(var, vs)
             },
             Element::Let(n, gs, t, e) => {
                 let (t, e) = {
-                    let env = env.local();
-                    let env = &env.scope_type(gs.clone());
+                    let mut names = NameData::new();
+                    let env = &env.scope_type(&mut names, gs.clone());
                     (t.to_id(env)?, e.to_id(env)?)
                 };
                 env.exps.add(n);
@@ -47,16 +48,16 @@ impl<T: Clone + AsRef<str>> Element<T> {
             },
             Element::Func(n, gs, re, ps) => {
                 env.exps.add(n);
-                let env = env.local();
-                let env = &env.scope_type(gs.clone());
+                let mut names = NameData::new();
+                let env = &env.scope_type(&mut names, gs.clone());
                 let re = re.to_id(env)?;
                 let e = ps.to_id(env)?;
                 ElementID::Func(gs.len(), re, e)
             },
             Element::Proof(n, gs, p, proof) => {
                 let (p, proof) = {
-                    let env = env.local();
-                    let env = &env.scope_type(gs.clone());
+                    let mut names = NameData::new();
+                    let env = &env.scope_type(&mut names, gs.clone());
                     match p {
                         Some(p) => {
                             let (p, proof) = (p, proof).to_id(env)?;

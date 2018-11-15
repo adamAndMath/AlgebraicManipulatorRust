@@ -1,5 +1,5 @@
 use env::Path;
-use envs::LocalNamespaces;
+use envs::{ NameData, Namespaces };
 use super::{ Type, Pattern, Exp, ErrAst, ToID };
 use id::renamed::{ TruthRefID, ProofID, Direction, RefType };
 use tree::Tree;
@@ -13,7 +13,7 @@ pub struct TruthRef<T> {
 
 impl<T: Clone + AsRef<str>> ToID<T> for TruthRef<T> {
     type To = TruthRefID;
-    fn to_id(&self, env: &LocalNamespaces) -> Result<TruthRefID, ErrAst<T>> {
+    fn to_id(&self, env: &Namespaces) -> Result<TruthRefID, ErrAst<T>> {
         let id = match self.name.as_ref() {
             [n] if n.as_ref() == "def" => RefType::Def,
             [n] if n.as_ref() == "match" => RefType::Match,
@@ -40,10 +40,14 @@ pub enum Proof<T> {
 
 impl<T: Clone + AsRef<str>> ToID<T> for Proof<T> {
     type To = ProofID;
-    fn to_id(&self, env: &LocalNamespaces) -> Result<ProofID, ErrAst<T>> {
+    fn to_id(&self, env: &Namespaces) -> Result<ProofID, ErrAst<T>> {
         Ok(match self {
             Proof::Sequence(initial, rest) => ProofID::Sequence(initial.to_id(env)?, rest.into_iter().map(|(d,p,t)|Ok((*d, p.to_id(env)?, t.clone()))).collect::<Result<_,ErrAst<T>>>()?),
-            Proof::Block(n, def, proof) => ProofID::Block(def.to_id(env)?, proof.to_id(&env.scope_truth(vec![n]))?),
+            Proof::Block(n, def, proof) => {
+                let mut names = NameData::new();
+                let proof = proof.to_id(&env.scope_truth(&mut names, vec![n]))?;
+                ProofID::Block(def.to_id(env)?, proof)
+            },
             Proof::Match(exp, cases) => ProofID::Match(exp.to_id(env)?, cases.to_id(env)?),
         })
     }

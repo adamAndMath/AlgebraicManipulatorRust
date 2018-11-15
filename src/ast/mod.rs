@@ -7,6 +7,7 @@ mod proof;
 mod module;
 mod err;
 mod to_id;
+mod to_id_mut;
 
 pub use self::word::Word;
 pub use self::ty::Type;
@@ -17,3 +18,4 @@ pub use self::proof::*;
 pub use self::module::Module;
 pub use self::err::ErrAst;
 pub use self::to_id::ToID;
+pub use self::to_id_mut::ToIDMut;

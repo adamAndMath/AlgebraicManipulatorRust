@@ -1,6 +1,7 @@
+use std::marker::PhantomData;
 use parser::Parse;
 use predef::*;
-use env::LocalID;
+use env::ID;
 use envs::NameData;
 use id::renamed::ExpID;
 use ast::{ Exp, ToID };
@@ -17,19 +18,19 @@ fn succ_zero() {
 
     let exp = Exp::parse("Succ(Zero)");
 
-    assert_eq!(exp.to_id(&space.local()), Ok(exp_id!(succ_id(zero_id))));
+    assert_eq!(exp.to_id(&space), Ok(exp_id!(succ_id(zero_id))));
 }
 
 #[test]
 fn apply() {
     let mut names = NameData::new();
     let space = predef_space(&mut names);
-    let e = Exp::parse("forall((x: Bool) -> exists((y: Bool) -> eq(x, y)))").to_id(&space.local()).unwrap();
-    let x = LocalID::new(1);
-    let y = LocalID::new(0);
+    let e = Exp::parse("forall((x: Bool) -> exists((y: Bool) -> eq(x, y)))").to_id(&space).unwrap();
+    let x = ID::Normal(0, 1, PhantomData);
+    let y = ID::new(0);
     macro_rules! test_apply {
         ($e:ident[$($t:tt)*]{$($r:tt)*} = $($rest:tt)*) =>
-            (assert_eq!($e.apply(&Tree::parse(stringify!([$($t)*])), 0, &|_,_|Ok(exp_id!($($r)*))), Exp::parse(stringify!($($rest)*)).to_id(&space.local()).map_err(Ok), stringify!([$($t)*])));
+            (assert_eq!($e.apply(&Tree::parse(stringify!([$($t)*])), 0, &|_,_|Ok(exp_id!($($r)*))), Exp::parse(stringify!($($rest)*)).to_id(&space).map_err(Ok), stringify!([$($t)*])));
     }
     test_apply!(e[] {TRUE_ID} = true);
     test_apply!(e[f] {EXISTS_ID} = exists((x: Bool) -> exists((y: Bool) -> eq(x, y))));
