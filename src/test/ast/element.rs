@@ -2,7 +2,7 @@ use parser::Parse;
 use predef::*;
 use env::{ Path, PushID };
 use envs::*;
-use ast::{ Type, Exp, Element, ToID, ErrAst };
+use ast::{ Type, Exp, Element, ToID, ToIDMut, ErrAst };
 use id::renamed::TypeID;
 
 
@@ -16,7 +16,7 @@ fn struct_empty() {
 
     Element::parse(
         "struct Test;"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 
     let e_id = space.get_exp(&Path::parse("Test")).unwrap();
     let ty_id = Type::parse("Test").to_id(&space).unwrap();
@@ -37,9 +37,9 @@ fn struct_tuple() {
     let mut env = Envs::new(&mut data);
     let lens = env.lens();
 
-    Element::parse("struct A;").to_id(&mut space).unwrap().define(&mut env).unwrap();
-    Element::parse("struct B;").to_id(&mut space).unwrap().define(&mut env).unwrap();
-    Element::parse("struct Test(A, B);").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("struct A;").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("struct B;").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("struct Test(A, B);").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 
     let e_id = space.get_exp(&Path::parse("Test")).unwrap();
     let ty_id = ::predef::func(Type::parse("(A, B)").to_id(&space).unwrap(), Type::parse("Test").to_id(&space).unwrap());
@@ -62,7 +62,7 @@ fn enum_option() {
     
     Element::parse(
         "enum Option<T> { Some(T), None }"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 
     assert_eq!(space.get_exp(&Path::parse("None")), Err(ErrAst::UnknownVar(Path::parse("None"))));
     assert_eq!(space.get_exp(&Path::parse("Some")), Err(ErrAst::UnknownVar(Path::parse("Some"))));
@@ -83,9 +83,9 @@ fn letting() {
     let mut env = Envs::new(&mut data);
     let lens = env.lens();
 
-    Element::parse("enum Nat { Zero, Succ(Nat) }").to_id(&mut space).unwrap().define(&mut env).unwrap();
-    Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero));").to_id(&mut space).unwrap().define(&mut env).unwrap();
-    Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero));").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("enum Nat { Zero, Succ(Nat) }").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("let two = Nat::Succ(Nat::Succ(Nat::Zero));").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("let two_marked: Nat = Nat::Succ(Nat::Succ(Nat::Zero));").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 
     assert_eq!(space.get_exp(&Path::parse("two")).map(|id|&env.exp[id]), space.get_exp(&Path::parse("two_marked")).map(|id|&env.exp[id]));
 
@@ -102,13 +102,13 @@ fn func() {
 
     Element::parse(
         "enum Nat { Zero, Succ(Nat) }"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     Element::parse(
         "fn add -> Nat {
             (a: Nat, Nat::Zero) => a,
             (a: Nat, Nat::Succ(p: Nat)) => Nat::Succ(add(a, p))
         }"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 
     let nat_id = space.get_type(&Path::parse("Nat")).expect("Nat has not been named");
     let add_id = space.get_exp(&Path::parse("add")).expect("add has not been named");
@@ -135,8 +135,8 @@ fn lists() {
     
     Element::parse(
         "enum List<+T> { Nil, Cons(T, List<T>)}"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     Element::parse(
         "fn prepend<T>(e: T, l: List<T>) -> List<T> = List::Cons<T>(e, l);"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
 }

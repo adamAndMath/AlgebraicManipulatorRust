@@ -112,7 +112,7 @@ fn unwraping_function_call() {
     let mut space = predef_space(&mut names);
     let mut data = predef_data();
     let mut env = Envs::new(&mut data);
-    Element::parse("fn f(a: Bool, b: Bool) = b;").to_id(&mut space).unwrap().define(&mut env).unwrap();
+    Element::parse("fn f(a: Bool, b: Bool) = b;").to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     let e = Exp::parse("f(true, false)");
     let e_id = e.to_id(&space).unwrap().push_id(1);
     space.truths.add(&"m");
@@ -184,12 +184,12 @@ fn double_negate() {
             true => false,
             false => true
         }"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     Element::parse(
         "proof DoubleNegate(b: Bool) = match b {
             true => ID<Bool>(not(not(true))).def(not(true))[1,0].def(not(false))[1]~match(b)[0,0,0|1],
             false => ID<Bool>(not(not(false))).def(not(false))[1,0].def(not(true))[1]~match(b)[0,0,0|1]
         }"
-    ).to_id(&mut space).unwrap().define(&mut env).unwrap();
+    ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     assert_eq!(env.truth[space.get_truth(&Path::parse("DoubleNegate")).unwrap()], TruthVal::new(Exp::parse("forall<Bool>((b: Bool) -> eq<Bool>(not(not(b)), b))").to_id(&space).unwrap().push_id(1), 0));
 }

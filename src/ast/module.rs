@@ -1,6 +1,6 @@
 use env::Path;
 use envs::Namespaces;
-use super::{ Word, Element, ErrAst };
+use super::{ Word, Element, ErrAst, ToIDMut };
 use id::renamed::ElementID;
 use parser::{ parse_file, Error };
 use read_file;
@@ -35,7 +35,7 @@ impl<'f> Module<Word<'f>> {
                     Err(p) => vec![Err(Into::<Error>::into(ErrAst::UndefinedPath(p)).with_path(path))],
                 }
             },
-            Module::Element(e) => vec![e.to_id(space).map_err(|e|Into::<Error>::into(e).with_path(path))],
+            Module::Element(e) => vec![e.to_id_mut(space).map_err(|e|Into::<Error>::into(e).with_path(path))],
         }
     }
 }

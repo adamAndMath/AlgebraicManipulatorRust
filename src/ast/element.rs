@@ -1,7 +1,7 @@
 use envs::*;
-use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID };
+use super::{ Type, Pattern, Exp, Proof, ErrAst, ToID, ToIDMut };
 use variance::Variance;
-use id::renamed::{ ElementID };
+use id::renamed::ElementID;
 
 #[derive(Debug)]
 pub enum Element<T> {
@@ -12,8 +12,9 @@ pub enum Element<T> {
     Proof(T, Vec<T>, Option<Pattern<T>>, Proof<T>),
 }
 
-impl<T: Clone + AsRef<str>> Element<T> {
-    pub fn to_id(&self, env: &mut Namespaces) -> Result<ElementID, ErrAst<T>> {
+impl<T: Clone + AsRef<str>> ToIDMut<T> for Element<T> {
+    type To = ElementID;
+    fn to_id_mut(&self, env: &mut Namespaces) -> Result<ElementID, ErrAst<T>> {
         Ok(match self {
             Element::Struct(n, gs, p) => {
                 let var = gs.into_iter().map(|(v,_)|*v).collect();
