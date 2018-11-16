@@ -23,9 +23,11 @@ of_type = { ( ":" ~ ty )? }
 return_type = { ( "->" ~ ty )? }
 clauses = { ("where")? }
 
-ty = _{ ty_gen | ty_tuple }
+ty = _{ ty_fn | ty_strong }
+ty_strong = _{ ty_gen | ty_tuple }
 ty_gen = { path ~ type_arg }
 ty_tuple = { "(" ~ ty ~ ( "," ~ ty )* ~ ")" }
+ty_fn = { ty_strong ~ "->" ~ ty }
 
 pattern = _{ pattern_var | pattern_comp | pattern_atom | pattern_tuple }
 pattern_var = { name ~ ":" ~ ty }

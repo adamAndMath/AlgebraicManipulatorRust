@@ -133,6 +133,12 @@ impl<'f> Parse<'f> for Type<Word<'f>> {
                     Type::Tuple(tys)
                 }
             },
+            Rule::ty_fn => {
+                let mut inner = pair.into_inner();
+                let t_in = parse(&mut inner);
+                let t_out = parse(&mut inner);
+                Type::Func(Box::new(t_in), Box::new(t_out))
+            }
             r => unreachable!("{:?}", r),
         }
     }
