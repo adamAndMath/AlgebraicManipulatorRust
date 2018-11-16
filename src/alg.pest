@@ -56,7 +56,7 @@ proof_match = { "match" ~ exp ~ proof_closure }
 proof_closure = { "{" ~ proof_arm ~ ( "," ~ proof_arm )* ~ ","? ~ "}" }
 proof_arm = { pattern ~ "=>" ~ proof }
 
-element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "proof" ~ ( elm_proof | elm_proof_forall ) }
+element = _{ "struct" ~ elm_struct | "enum" ~ elm_enum | "let" ~ elm_let | "fn" ~ (elm_func | elm_func_match) | "pf" ~ ( elm_proof | elm_proof_forall ) }
 elm_struct = { name ~ type_gen ~ elm_struct_par ~ clauses }
 elm_struct_par = { ty_tuple? }
 elm_enum = { name ~ type_gen ~ clauses ~ "{" ~ elm_emum_variant ~ ("," ~ elm_emum_variant)* ~ ","? ~ "}" }

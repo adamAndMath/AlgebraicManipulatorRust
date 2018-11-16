@@ -176,8 +176,8 @@ fn block() {
     let mut data = predef_data();
     let env = Envs::new(&mut data);
     let p = Proof::parse("{
-        proof t = def({ true => false, false => true }(true))
-        proof f = def({ true => true, false => false }(false))
+        pf t = def({ true => false, false => true }(true))
+        pf f = def({ true => true, false => false }(false))
         f~t[1]
     }");
     let p = p.to_id(&space).unwrap().execute(&env).unwrap();
@@ -197,7 +197,7 @@ fn double_negate() {
         }"
     ).to_id_mut(&mut space).unwrap().define(&mut env).unwrap();
     Element::parse(
-        "proof DoubleNegate(b: Bool) = match b {
+        "pf DoubleNegate(b: Bool) = match b {
             true => ID<Bool>(not(not(true))).def(not(true))[1,0].def(not(false))[1]~match(b)[0,0,0|1],
             false => ID<Bool>(not(not(false))).def(not(false))[1,0].def(not(true))[1]~match(b)[0,0,0|1]
         }"
